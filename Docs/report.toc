@@ -1,0 +1,105 @@
+\contentsline {section}{\numberline {1}Week 1: Research \& Setup}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Research Phase}{1}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}ESP-NOW Protocol Learning}{1}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Hardware Setup}{2}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Project Architecture Plan}{2}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}System Design Specifications}{2}{subsection.1.5}%
+\contentsline {subsubsection}{\numberline {1.5.1}Network Topology}{2}{subsubsection.1.5.1}%
+\contentsline {subsubsection}{\numberline {1.5.2}Mapping Area Design}{3}{subsubsection.1.5.2}%
+\contentsline {subsubsection}{\numberline {1.5.3}Data Flow Architecture}{3}{subsubsection.1.5.3}%
+\contentsline {subsection}{\numberline {1.6}Week 1 Deliverables}{3}{subsection.1.6}%
+\contentsline {subsection}{\numberline {1.7}Challenges and Solutions}{4}{subsection.1.7}%
+\contentsline {section}{\numberline {2}Week 2: Core Module Development}{5}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Objective}{5}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Implementation Overview}{5}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Ultrasonic Sensor Integration}{5}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Hardware Connection}{5}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Sensor Reading Code}{5}{subsubsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.4}ESP-NOW Broadcasting Implementation}{5}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}Protocol Initialization}{5}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Data Structure Design}{6}{subsubsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.5}Main Program Logic}{6}{subsection.2.5}%
+\contentsline {subsection}{\numberline {2.6}Testing and Validation}{6}{subsection.2.6}%
+\contentsline {subsubsection}{\numberline {2.6.1}Test Cases}{6}{subsubsection.2.6.1}%
+\contentsline {subsubsection}{\numberline {2.6.2}Observed Behavior}{7}{subsubsection.2.6.2}%
+\contentsline {subsection}{\numberline {2.7}Week 2 Deliverables}{7}{subsection.2.7}%
+\contentsline {subsection}{\numberline {2.8}Challenges and Solutions}{7}{subsection.2.8}%
+\contentsline {section}{\numberline {3}Week 3: Integration}{8}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Objective}{8}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Implementation Overview}{8}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Data Reception Module}{8}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Receiver Callback Function}{8}{subsubsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.4}Internal Map Implementation}{8}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Map Data Structure}{8}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Map Update Logic}{9}{subsubsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.5}Re-Broadcasting Logic}{9}{subsection.3.5}%
+\contentsline {subsubsection}{\numberline {3.5.1}Selective Re-Broadcasting}{9}{subsubsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.6}Multi-Robot Coordination}{9}{subsection.3.6}%
+\contentsline {subsubsection}{\numberline {3.6.1}Second Robot Main Program}{9}{subsubsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.7}Communication Protocol}{10}{subsection.3.7}%
+\contentsline {subsubsection}{\numberline {3.7.1}Message Format}{10}{subsubsection.3.7.1}%
+\contentsline {subsubsection}{\numberline {3.7.2}Collision Avoidance}{10}{subsubsection.3.7.2}%
+\contentsline {subsection}{\numberline {3.8}Testing Multi-Robot System}{10}{subsection.3.8}%
+\contentsline {subsubsection}{\numberline {3.8.1}Integration Test Scenarios}{10}{subsubsection.3.8.1}%
+\contentsline {subsubsection}{\numberline {3.8.2}Map Consistency Verification}{10}{subsubsection.3.8.2}%
+\contentsline {subsection}{\numberline {3.9}Week 3 Deliverables}{10}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}Challenges and Solutions}{11}{subsection.3.10}%
+\contentsline {section}{\numberline {4}Week 4: Enhancement}{12}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Objective}{12}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Implementation Overview}{12}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Algorithm Selection}{12}{subsection.4.3}%
+\contentsline {subsubsection}{\numberline {4.3.1}Chosen Approach}{12}{subsubsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.4}Position Tracking System}{12}{subsection.4.4}%
+\contentsline {subsubsection}{\numberline {4.4.1}Color-Based Localization}{12}{subsubsection.4.4.1}%
+\contentsline {subsubsection}{\numberline {4.4.2}Position Broadcasting}{12}{subsubsection.4.4.2}%
+\contentsline {subsection}{\numberline {4.5}Coordination Algorithm Implementation}{13}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}Leader-Follower Logic (if applicable)}{13}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}Swarm Behavior Logic (if applicable)}{13}{subsubsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.6}Motor Control Integration}{13}{subsection.4.6}%
+\contentsline {subsubsection}{\numberline {4.6.1}Movement Control System}{13}{subsubsection.4.6.1}%
+\contentsline {subsection}{\numberline {4.7}Formation Maintenance}{13}{subsection.4.7}%
+\contentsline {subsubsection}{\numberline {4.7.1}Distance Calculation}{13}{subsubsection.4.7.1}%
+\contentsline {subsubsection}{\numberline {4.7.2}Adjustment Strategy}{14}{subsubsection.4.7.2}%
+\contentsline {subsection}{\numberline {4.8}Master Node Coordination}{14}{subsection.4.8}%
+\contentsline {subsection}{\numberline {4.9}Testing Coordination System}{14}{subsection.4.9}%
+\contentsline {subsubsection}{\numberline {4.9.1}Formation Test Scenarios}{14}{subsubsection.4.9.1}%
+\contentsline {subsubsection}{\numberline {4.9.2}Performance Metrics}{14}{subsubsection.4.9.2}%
+\contentsline {subsection}{\numberline {4.10}Week 4 Deliverables}{14}{subsection.4.10}%
+\contentsline {subsection}{\numberline {4.11}Challenges and Solutions}{15}{subsection.4.11}%
+\contentsline {section}{\numberline {5}Week 5: Final Testing \& Documentation}{16}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Objective}{16}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Final System Integration}{16}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Comprehensive Testing}{16}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Test Scenario 1: Area Mapping}{16}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Test Scenario 2: Dynamic Obstacle Avoidance}{16}{subsubsection.5.3.2}%
+\contentsline {subsubsection}{\numberline {5.3.3}Test Scenario 3: Coordination Under Communication Stress}{17}{subsubsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.4}Mesh Protocol Documentation}{17}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Protocol Architecture}{17}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}Message Types and Formats}{18}{subsubsection.5.4.2}%
+\contentsline {subsubsection}{\numberline {5.4.3}Protocol State Machine}{18}{subsubsection.5.4.3}%
+\contentsline {subsubsection}{\numberline {5.4.4}Error Handling and Recovery}{18}{subsubsection.5.4.4}%
+\contentsline {subsection}{\numberline {5.5}Performance Analysis}{18}{subsection.5.5}%
+\contentsline {subsubsection}{\numberline {5.5.1}Quantitative Metrics}{18}{subsubsection.5.5.1}%
+\contentsline {subsubsection}{\numberline {5.5.2}Qualitative Assessment}{19}{subsubsection.5.5.2}%
+\contentsline {subsection}{\numberline {5.6}Demonstration Results}{19}{subsection.5.6}%
+\contentsline {subsubsection}{\numberline {5.6.1}Video Documentation}{19}{subsubsection.5.6.1}%
+\contentsline {subsubsection}{\numberline {5.6.2}Photographic Documentation}{19}{subsubsection.5.6.2}%
+\contentsline {subsection}{\numberline {5.7}Complete System Code}{19}{subsection.5.7}%
+\contentsline {subsection}{\numberline {5.8}Project Outcomes}{20}{subsection.5.8}%
+\contentsline {subsubsection}{\numberline {5.8.1}Achievements}{20}{subsubsection.5.8.1}%
+\contentsline {subsubsection}{\numberline {5.8.2}Limitations}{20}{subsubsection.5.8.2}%
+\contentsline {subsubsection}{\numberline {5.8.3}Future Improvements}{20}{subsubsection.5.8.3}%
+\contentsline {subsection}{\numberline {5.9}Lessons Learned}{20}{subsection.5.9}%
+\contentsline {subsubsection}{\numberline {5.9.1}Technical Insights}{20}{subsubsection.5.9.1}%
+\contentsline {subsubsection}{\numberline {5.9.2}Project Management}{20}{subsubsection.5.9.2}%
+\contentsline {subsection}{\numberline {5.10}Week 5 Deliverables}{20}{subsection.5.10}%
+\contentsline {section}{\numberline {6}Conclusion}{22}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Project Summary}{22}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Technical Contributions}{22}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Team Reflection}{22}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Acknowledgments}{22}{subsection.6.4}%
+\contentsline {section}{\numberline {7}References}{23}{section.7}%
+\contentsline {section}{\numberline {A}Complete Source Code}{24}{appendix.A}%
+\contentsline {section}{\numberline {B}Circuit Diagrams}{24}{appendix.B}%
+\contentsline {section}{\numberline {C}Component Specifications}{24}{appendix.C}%
+\contentsline {section}{\numberline {D}Additional Test Results}{24}{appendix.D}%
