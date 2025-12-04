@@ -1,0 +1,1149 @@
+% !TEX program = pdflatex
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage{tcolorbox}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{amssymb}
+
+% Fix header height
+\setlength{\headheight}{25pt}
+
+% Color definitions
+\definecolor{primarycolor}{RGB}{0,102,204}
+\definecolor{secondarycolor}{RGB}{51,51,51}
+\definecolor{accentcolor}{RGB}{0,153,204}
+\definecolor{codebg}{RGB}{245,245,245}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primarycolor,
+    filecolor=primarycolor,
+    urlcolor=accentcolor,
+    citecolor=primarycolor,
+    pdftitle={Wireless Sensor Network for Robotic Fleet Coordination},
+    pdfauthor={Team Members},
+}
+
+% Header and Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{primarycolor}{\small Wireless Sensor Network for Robotic Fleet Coordination}}
+\fancyhead[R]{\textcolor{secondarycolor}{\small GIU - Winter 2025}}
+\fancyfoot[C]{\textcolor{secondarycolor}{\thepage}}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{primarycolor}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{primarycolor}\leaders\hrule height \footrulewidth\hfill}}
+
+% Section formatting
+\titleformat{\section}
+{\color{primarycolor}\normalfont\Large\bfseries}
+{\color{primarycolor}\thesection}{1em}{}
+[\titlerule]
+
+\titleformat{\subsection}
+{\color{accentcolor}\normalfont\large\bfseries}
+{\color{accentcolor}\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+{\color{secondarycolor}\normalfont\normalsize\bfseries}
+{\color{secondarycolor}\thesubsubsection}{1em}{}
+
+% Code listing style
+\lstdefinestyle{cppstyle}{
+    language=C++,
+    backgroundcolor=\color{codebg},
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{primarycolor}\bfseries,
+    commentstyle=\color{gray}\itshape,
+    stringstyle=\color{accentcolor},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=10pt,
+    frame=single,
+    rulecolor=\color{primarycolor},
+    breaklines=true,
+    breakatwhitespace=false,
+    tabsize=4,
+    showstringspaces=false,
+    captionpos=b
+}
+
+\lstset{style=cppstyle}
+
+% Custom tcolorbox styles
+\tcbuselibrary{skins,breakable}
+\newtcolorbox{infobox}{
+    colback=primarycolor!5,
+    colframe=primarycolor,
+    fonttitle=\bfseries,
+    title=Information,
+    breakable,
+    enhanced,
+    attach boxed title to top left={yshift=-2mm,xshift=5mm},
+    boxed title style={colback=primarycolor}
+}
+
+\newtcolorbox{notebox}{
+    colback=accentcolor!5,
+    colframe=accentcolor,
+    fonttitle=\bfseries,
+    title=Note,
+    breakable,
+    enhanced,
+    attach boxed title to top left={yshift=-2mm,xshift=5mm},
+    boxed title style={colback=accentcolor}
+}
+
+\newtcolorbox{codebox}[1]{
+    colback=codebg,
+    colframe=secondarycolor,
+    fonttitle=\bfseries,
+    title=#1,
+    breakable,
+    enhanced
+}
+
+% Document start
+\begin{document}
+
+% Remove header/footer from cover page
+\thispagestyle{empty}
+
+% ===================================
+% COVER PAGE
+% ===================================
+\begin{titlepage}
+    \centering
+    
+    % Top spacing
+    \vspace*{1cm}
+    
+    % University logo placeholder (add your logo here)
+    % \includegraphics[width=0.3\textwidth]{giu_logo.png}
+    
+    \vspace{1cm}
+    
+    % University name
+    {\Large \textbf{German International University}\par}
+    {\large Faculty of Engineering\par}
+    {\large Major of Automation and Control\par}
+    
+    \vspace{1.5cm}
+    
+    % Decorative line
+    {\color{primarycolor}\rule{\linewidth}{0.5mm}}\par
+    
+    \vspace{0.5cm}
+    
+    % Title
+    {\Huge \textbf{\textcolor{primarycolor}{Wireless Sensor Network}}\par}
+    {\Huge \textbf{\textcolor{primarycolor}{for Robotic Fleet}}\par}
+    {\Huge \textbf{\textcolor{primarycolor}{Coordination}}\par}
+    
+    \vspace{0.5cm}
+    
+    % Decorative line
+    {\color{primarycolor}\rule{\linewidth}{0.5mm}}\par
+    
+    \vspace{1cm}
+    
+    % Subtitle
+    {\Large Introduction to Computer Networks\par}
+    {\Large Project Report\par}
+    
+    \vspace{2cm}
+    
+    % Team information
+    \begin{minipage}{0.8\textwidth}
+        \begin{center}
+            {\large \textbf{Team Members}\par}
+            \vspace{0.5cm}
+            \begin{tabular}{ll}
+                Hassan Yousef & 13006567 \\
+                Pierre George Boshra & 13007351 \\
+                Mohamed Walid & 13006513 \\
+                Abdelhamid ElSharnouby & 13006294 \\
+                Khaled Khaled & 14001048 \\
+                Mahmoud Nasser & 13006342 \\
+            \end{tabular}
+        \end{center}
+    \end{minipage}
+    
+    \vspace{1.5cm}
+    
+    % Supervisor information
+    {\large \textbf{Supervised by}\par}
+    {\large Dr. Yasmine Zaghloul\par}
+    {\large TA: Eng. Omar Hemeda\par}
+    
+    \vfill
+    
+    % Date
+    {\large Winter Semester 2025\par}
+    {\large December 2025\par}
+    
+\end{titlepage}
+
+% ===================================
+% TABLE OF CONTENTS
+% ===================================
+\newpage
+\tableofcontents
+\thispagestyle{empty}
+
+% Start page numbering from here
+\newpage
+\setcounter{page}{1}
+
+% ===================================
+% WEEK 1: RESEARCH & SETUP
+% ===================================
+\newpage
+\section{Week 1: Research \& Setup}
+	extit{November 17-23, 2025}
+
+\subsection{Research Phase}
+
+To establish a solid foundation for our project, we conducted comprehensive research utilizing multiple academic and expert resources. Our research methodology included:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Academic Database Search:} We performed extensive literature review using the Egyptian Knowledge Bank (EKB) database, searching for relevant research papers and technical documentation on wireless sensor networks, ESP-NOW protocol, mesh networking architectures, and robotic coordination systems.
+    
+    \item \textbf{Expert Consultation:} We consulted with Professor Yasmine Zaghloul, our course instructor, to discuss the project scope, technical feasibility, and recommended implementation approaches. Her guidance helped us refine our project objectives and identify potential challenges.
+    
+    \item \textbf{Technical Advisory:} We met with TA Omar Hemeda to discuss the practical aspects of the project implementation, including hardware selection, programming methodologies, and project timeline management.
+    
+    \item \textbf{Laboratory Support:} We worked closely with Lab Engineer Amr Khaled to understand the available laboratory resources, safety protocols, and equipment handling procedures necessary for our project development.
+\end{itemize}
+
+\subsection{ESP-NOW Protocol Learning}
+
+To gain practical understanding of the ESP-NOW protocol, we studied various resources with particular focus on the tutorial video "\textit{ESPNOW for beginners! \#ESP32 \#ESP8266}" available at:
+
+\begin{center}
+    \url{https://www.youtube.com/watch?v=Ydi0M3Xd_vs}
+\end{center}
+
+This resource provided valuable insights into:
+\begin{itemize}[leftmargin=*]
+    \item The fundamentals of ESP-NOW as a fast, connectionless peer-to-peer communication protocol
+    \item Setting up ESP-NOW connections between multiple ESP32 devices
+    \item Broadcasting and receiving data packets
+    \item Implementing callback functions for data handling
+    \item Debugging common ESP-NOW implementation issues
+\end{itemize}
+
+\subsection{Hardware Setup}
+
+We successfully configured the development environment for the ESP32 microcontrollers using the Arduino IDE. The setup process included:
+
+\begin{itemize}[leftmargin=*]
+    \item Installing the Arduino IDE (version 2.x)
+    \item Adding ESP32 board support through the Boards Manager
+    \item Installing necessary libraries (ESP-NOW, WiFi, sensor libraries)
+    \item Testing basic functionality with simple sketch uploads
+    \item Verifying serial communication for debugging purposes
+\end{itemize}
+
+\subsection{Project Architecture Plan}
+
+After thorough analysis and team discussions, we finalized our system architecture as follows:
+
+\begin{infobox}
+\textbf{Hardware Configuration:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{3 ESP32 Microcontrollers:} Serve as the core processing units
+    \item \textbf{2 Remote-Controlled Toy Vehicles:} Provide the mobile platform for our robotic agents
+    \item \textbf{Master-Slave Architecture:} Two ESP32 units mounted on vehicles act as slave nodes, while one ESP32 connected to PC via USB serves as the master coordinator
+\end{itemize}
+\end{infobox}
+
+\begin{notebox}
+\textbf{Sensor Configuration per Vehicle:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Ultrasonic Sensor (HC-SR04):} Detects obstacles and measures distances to objects in the robot's path
+    \item \textbf{Color Sensor (TCS3200/TCS34725):} Identifies the unique color of squares in the mapping area, enabling precise localization and obstacle mapping
+\end{itemize}
+\end{notebox}
+
+\subsection{System Design Specifications}
+
+\subsubsection{Network Topology}
+The system implements a mesh network topology where all three ESP32 devices maintain peer-to-peer connections. This ensures:
+\begin{itemize}[leftmargin=*]
+    \item Redundant communication paths
+    \item Distributed data processing
+    \item Fault tolerance in case of node failure
+    \item Real-time data sharing across all nodes
+\end{itemize}
+
+\subsubsection{Mapping Area Design}
+The operational environment consists of a grid-based area with the following characteristics:
+\begin{itemize}[leftmargin=*]
+    \item Divided into uniquely colored squares
+    \item Each square color serves as a unique identifier for localization
+    \item Obstacles can be placed dynamically within the grid
+    \item The grid provides a structured environment for testing coordination algorithms
+\end{itemize}
+
+\subsubsection{Data Flow Architecture}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Slave Nodes (Mobile Robots):}
+    \begin{itemize}
+        \item Continuously scan environment using ultrasonic sensors
+        \item Read ground color using color sensors
+        \item Broadcast obstacle and position data via ESP-NOW
+        \item Receive and process data from peer nodes
+        \item Update internal map representation
+    \end{itemize}
+    
+    \item \textbf{Master Node (PC-Connected):}
+    \begin{itemize}
+        \item Aggregates data from all slave nodes
+        \item Maintains global map of the environment
+        \item Provides visualization interface through serial communication
+        \item Coordinates robot movements (in later phases)
+        \item Logs data for analysis and documentation
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Week 1 Deliverables}
+\begin{itemize}[leftmargin=*]
+    \item[$\checkmark$] Completed research on ESP-NOW protocol and mesh networking
+    \item[$\checkmark$] Set up Arduino IDE development environment
+    \item[$\checkmark$] Assembled 2-3 basic robot chassis with remote control capability
+    \item[$\checkmark$] Finalized project architecture and component selection
+    \item[$\checkmark$] Established communication with project advisors
+    \item[$\checkmark$] Created project timeline and milestone definitions
+\end{itemize}
+
+\subsection{Challenges and Solutions}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Challenge:} Understanding ESP-NOW protocol differences from traditional WiFi
+    \item \textbf{Solution:} Studied multiple tutorials and documentation, conducted simple experiments
+    
+    \item \textbf{Challenge:} Selecting appropriate sensors within budget constraints
+    \item \textbf{Solution:} Consulted with lab engineer and utilized available laboratory equipment
+\end{itemize}
+
+\vspace{1cm}
+
+% Space for additional notes
+\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
+\vspace{3cm}
+\end{tcolorbox}
+
+% ===================================
+% WEEK 2: CORE MODULE DEVELOPMENT
+% ===================================
+\newpage
+\section{Week 2: Core Module Development}
+	extit{November 24-30, 2025}
+
+\subsection{Objective}
+Program one robot to read its ultrasonic sensor and broadcast obstacle data via ESP-NOW protocol.
+
+\subsection{Implementation Overview}
+
+\textit{[To be completed during Week 2]}
+
+\vspace{1cm}
+
+\subsection{Ultrasonic Sensor Integration}
+
+\subsubsection{Hardware Connection}
+\textit{[Document sensor wiring and pin configuration]}
+
+\vspace{2cm}
+
+\subsubsection{Sensor Reading Code}
+
+\begin{codebox}{Ultrasonic Sensor Data Acquisition}
+\begin{lstlisting}
+// Placeholder for ultrasonic sensor code
+// Include: HC-SR04 initialization, distance measurement function,
+// noise filtering, and calibration routines
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{ESP-NOW Broadcasting Implementation}
+
+\subsubsection{Protocol Initialization}
+
+\begin{codebox}{ESP-NOW Setup and Configuration}
+\begin{lstlisting}
+// Placeholder for ESP-NOW initialization code
+// Include: WiFi mode setup, ESP-NOW init, peer registration,
+// MAC address handling, and callback function definitions
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsubsection{Data Structure Design}
+
+\begin{codebox}{Obstacle Data Structure}
+\begin{lstlisting}
+// Placeholder for data structure definitions
+// Include: Struct for obstacle data, position information,
+// timestamp, robot ID, and data packaging functions
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Main Program Logic}
+
+\begin{codebox}{Main Loop - Single Robot Broadcast}
+\begin{lstlisting}
+// Placeholder for main program code
+// Include: Setup function, main loop with sensor reading,
+// data broadcasting, timing control, and debug output
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{3cm}
+
+\subsection{Testing and Validation}
+
+\subsubsection{Test Cases}
+\textit{[Document test scenarios and results]}
+
+\vspace{2cm}
+
+\subsubsection{Observed Behavior}
+\textit{[Record actual system behavior during testing]}
+
+\vspace{2cm}
+
+\subsection{Week 2 Deliverables}
+\begin{itemize}[leftmargin=*]
+    \item[$\square$] Functional ultrasonic sensor reading module
+    \item[$\square$] Working ESP-NOW broadcast implementation
+    \item[$\square$] Tested single-robot obstacle detection system
+    \item[$\square$] Documented code with comments
+    \item[$\square$] Performance metrics and range testing results
+\end{itemize}
+
+\vspace{1cm}
+
+\subsection{Challenges and Solutions}
+\textit{[Document any technical challenges encountered and their solutions]}
+
+\vspace{3cm}
+
+% Space for additional notes
+\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
+\vspace{3cm}
+\end{tcolorbox}
+
+% ===================================
+% WEEK 3: INTEGRATION
+% ===================================
+\newpage
+\section{Week 3: Integration}
+	extit{December 1-7, 2025}
+
+\subsection{Objective}
+Program a second robot to receive broadcasted data and implement the logic: "If I receive an obstacle alert, add it to my internal map and re-broadcast."
+
+\subsection{Implementation Overview}
+
+\textit{[To be completed during Week 3]}
+
+\vspace{1cm}
+
+\subsection{Data Reception Module}
+
+\subsubsection{Receiver Callback Function}
+
+\begin{codebox}{ESP-NOW Data Reception Handler}
+\begin{lstlisting}
+// Placeholder for ESP-NOW receive callback
+// Include: Callback function to handle incoming data,
+// data validation, parsing, and acknowledgment
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Internal Map Implementation}
+
+\subsubsection{Map Data Structure}
+
+\begin{codebox}{Internal Map Structure}
+\begin{lstlisting}
+// Placeholder for internal map implementation
+// Include: Map data structure (array/linked list),
+// obstacle storage, coordinate system, map size definitions
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsubsection{Map Update Logic}
+
+\begin{codebox}{Map Update and Management}
+\begin{lstlisting}
+// Placeholder for map update functions
+// Include: Add obstacle function, update existing entries,
+// remove outdated data, map query functions
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Re-Broadcasting Logic}
+
+\subsubsection{Selective Re-Broadcasting}
+
+\begin{codebox}{Data Re-Broadcast Implementation}
+\begin{lstlisting}
+// Placeholder for re-broadcast logic
+// Include: Function to re-broadcast received data,
+// duplicate detection, broadcast management, TTL handling
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Multi-Robot Coordination}
+
+\subsubsection{Second Robot Main Program}
+
+\begin{codebox}{Second Robot Complete Program}
+\begin{lstlisting}
+// Placeholder for second robot program
+// Include: Setup with both TX and RX capabilities,
+// main loop handling both sensing and receiving,
+// integrated map management
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{3cm}
+
+\subsection{Communication Protocol}
+
+\subsubsection{Message Format}
+\textit{[Document the message structure and protocol specifications]}
+
+\vspace{2cm}
+
+\subsubsection{Collision Avoidance}
+\textit{[Document strategy to prevent network congestion]}
+
+\vspace{2cm}
+
+\subsection{Testing Multi-Robot System}
+
+\subsubsection{Integration Test Scenarios}
+\textit{[Document test cases with two robots]}
+
+\vspace{2cm}
+
+\subsubsection{Map Consistency Verification}
+\textit{[Document how you verified both robots maintain consistent maps]}
+
+\vspace{2cm}
+
+\subsection{Week 3 Deliverables}
+\begin{itemize}[leftmargin=*]
+    \item[$\square$] Working two-robot communication system
+    \item[$\square$] Internal map implementation on both robots
+    \item[$\square$] Functional re-broadcast mechanism
+    \item[$\square$] Duplicate detection and handling
+    \item[$\square$] Synchronized map between robots
+    \item[$\square$] Communication protocol documentation
+\end{itemize}
+
+\vspace{1cm}
+
+\subsection{Challenges and Solutions}
+\textit{[Document any technical challenges encountered and their solutions]}
+
+\vspace{3cm}
+
+% Space for additional notes
+\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
+\vspace{3cm}
+\end{tcolorbox}
+
+% ===================================
+% WEEK 4: ENHANCEMENT
+% ===================================
+\newpage
+\section{Week 4: Enhancement}
+	extit{December 8-14, 2025}
+
+\subsection{Objective}
+Implement a simple "leader-follower" or "swarm" algorithm where robots try to maintain formation based on shared location data.
+
+\subsection{Implementation Overview}
+
+\textit{[To be completed during Week 4]}
+
+\vspace{1cm}
+
+\subsection{Algorithm Selection}
+
+\subsubsection{Chosen Approach}
+\textit{[Document whether you chose leader-follower or swarm, and justify the choice]}
+
+\vspace{2cm}
+
+\subsection{Position Tracking System}
+
+\subsubsection{Color-Based Localization}
+
+\begin{codebox}{Color Sensor Integration}
+\begin{lstlisting}
+// Placeholder for color sensor code
+// Include: Color sensor initialization, RGB reading,
+// color identification, position mapping from color
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsubsection{Position Broadcasting}
+
+\begin{codebox}{Location Data Sharing}
+\begin{lstlisting}
+// Placeholder for position broadcast
+// Include: Extended data structure with position info,
+// regular position updates, coordinate transformation
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Coordination Algorithm Implementation}
+
+\subsubsection{Leader-Follower Logic (if applicable)}
+
+\begin{codebox}{Leader-Follower Algorithm}
+\begin{lstlisting}
+// Placeholder for leader-follower implementation
+// Include: Leader selection, follower behavior,
+// formation maintenance, distance control
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsubsection{Swarm Behavior Logic (if applicable)}
+
+\begin{codebox}{Swarm Algorithm}
+\begin{lstlisting}
+// Placeholder for swarm implementation
+// Include: Neighbor detection, flocking rules,
+// separation/alignment/cohesion behaviors
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Motor Control Integration}
+
+\subsubsection{Movement Control System}
+
+\begin{codebox}{Robot Movement Control}
+\begin{lstlisting}
+// Placeholder for motor control code
+// Include: Motor driver initialization, movement functions,
+// speed control, direction control, formation adjustment
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Formation Maintenance}
+
+\subsubsection{Distance Calculation}
+\textit{[Document how robots calculate relative positions]}
+
+\vspace{2cm}
+
+\subsubsection{Adjustment Strategy}
+\textit{[Explain how robots adjust their positions to maintain formation]}
+
+\vspace{2cm}
+
+\subsection{Master Node Coordination}
+
+\begin{codebox}{Master Node Control Logic}
+\begin{lstlisting}
+// Placeholder for master node coordination
+// Include: Global position tracking, command generation,
+// formation monitoring, visualization output
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{3cm}
+
+\subsection{Testing Coordination System}
+
+\subsubsection{Formation Test Scenarios}
+\textit{[Document test cases for formation maintenance]}
+
+\vspace{2cm}
+
+\subsubsection{Performance Metrics}
+\textit{[Record formation accuracy, response time, stability]}
+
+\vspace{2cm}
+
+\subsection{Week 4 Deliverables}
+\begin{itemize}[leftmargin=*]
+    \item[$\square$] Functional coordination algorithm implementation
+    \item[$\square$] Color-based position tracking system
+    \item[$\square$] Motor control integration
+    \item[$\square$] Formation maintenance capability
+    \item[$\square$] Master node coordination interface
+    \item[$\square$] Algorithm documentation and parameters
+\end{itemize}
+
+\vspace{1cm}
+
+\subsection{Challenges and Solutions}
+\textit{[Document any technical challenges encountered and their solutions]}
+
+\vspace{3cm}
+
+% Space for additional notes
+\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
+\vspace{3cm}
+\end{tcolorbox}
+
+% ===================================
+% WEEK 5: FINAL TESTING & DOCUMENTATION
+% ===================================
+\newpage
+\section{Week 5: Final Testing \& Documentation}
+	extit{December 15-22, 2025}
+
+\subsection{Objective}
+Demonstrate the robots coordinating to map an area or avoid a new obstacle. Document the mesh protocol and finalize project deliverables.
+
+\subsection{Final System Integration}
+
+\textit{[To be completed during Week 5]}
+
+\vspace{1cm}
+
+\subsection{Comprehensive Testing}
+
+\subsubsection{Test Scenario 1: Area Mapping}
+
+\begin{notebox}
+\textbf{Test Description:}
+
+\textit{[Describe the area mapping test scenario in detail]}
+
+\vspace{1cm}
+
+\textbf{Expected Behavior:}
+
+\textit{[Describe expected system behavior]}
+
+\vspace{1cm}
+
+\textbf{Actual Results:}
+
+\textit{[Record actual test results]}
+
+\vspace{1cm}
+
+\textbf{Observations:}
+
+\textit{[Note any interesting observations]}
+\end{notebox}
+
+\vspace{1cm}
+
+\subsubsection{Test Scenario 2: Dynamic Obstacle Avoidance}
+
+\begin{notebox}
+\textbf{Test Description:}
+
+\textit{[Describe the dynamic obstacle avoidance test]}
+
+\vspace{1cm}
+
+\textbf{Expected Behavior:}
+
+\textit{[Describe expected system behavior]}
+
+\vspace{1cm}
+
+\textbf{Actual Results:}
+
+\textit{[Record actual test results]}
+
+\vspace{1cm}
+
+\textbf{Observations:}
+
+\textit{[Note any interesting observations]}
+\end{notebox}
+
+\vspace{1cm}
+
+\subsubsection{Test Scenario 3: Coordination Under Communication Stress}
+
+\begin{notebox}
+\textbf{Test Description:}
+
+\textit{[Describe stress test with multiple obstacles and commands]}
+
+\vspace{1cm}
+
+\textbf{Expected Behavior:}
+
+\textit{[Describe expected system behavior]}
+
+\vspace{1cm}
+
+\textbf{Actual Results:}
+
+\textit{[Record actual test results]}
+
+\vspace{1cm}
+
+\textbf{Observations:}
+
+\textit{[Note any interesting observations]}
+\end{notebox}
+
+\vspace{1cm}
+
+\subsection{Mesh Protocol Documentation}
+
+\subsubsection{Protocol Architecture}
+
+\begin{infobox}
+\textbf{Network Topology:}
+
+\textit{[Describe the final network topology implementation]}
+
+\vspace{1cm}
+
+\textbf{Node Roles:}
+\begin{itemize}[leftmargin=*]
+    \item Master Node: \textit{[Describe responsibilities]}
+    \item Slave Nodes: \textit{[Describe responsibilities]}
+\end{itemize}
+
+\vspace{1cm}
+
+\textbf{Communication Patterns:}
+
+\textit{[Describe how nodes communicate with each other]}
+\end{infobox}
+
+\vspace{1cm}
+
+\subsubsection{Message Types and Formats}
+
+\begin{codebox}{Protocol Message Definitions}
+\begin{lstlisting}
+// Final protocol message structures
+// Include: All message types used in the system,
+// data structures, packet formats, headers
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsubsection{Protocol State Machine}
+
+\textit{[Document the protocol state machine or flow diagram]}
+
+\vspace{3cm}
+
+\subsubsection{Error Handling and Recovery}
+
+\textit{[Document how the system handles communication errors, node failures, etc.]}
+
+\vspace{2cm}
+
+\subsection{Performance Analysis}
+
+\subsubsection{Quantitative Metrics}
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Metric} & \textbf{Measured Value} & \textbf{Notes} \\ \midrule
+Communication Range & & \\
+Message Latency & & \\
+Packet Loss Rate & & \\
+Sensor Accuracy & & \\
+Map Update Frequency & & \\
+Formation Error & & \\
+Battery Life & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\vspace{1cm}
+
+\subsubsection{Qualitative Assessment}
+
+\textit{[Provide qualitative assessment of system performance]}
+
+\vspace{2cm}
+
+\subsection{Demonstration Results}
+
+\subsubsection{Video Documentation}
+\textit{[Reference video demonstrations, include timestamps of key features]}
+
+\vspace{2cm}
+
+\subsubsection{Photographic Documentation}
+\textit{[Include or reference photographs of the system in operation]}
+
+\vspace{2cm}
+
+\subsection{Complete System Code}
+
+\begin{codebox}{Master Node - Final Code}
+\begin{lstlisting}
+// Final master node code
+// Complete, documented, and tested implementation
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\begin{codebox}{Slave Node - Final Code}
+\begin{lstlisting}
+// Final slave node code
+// Complete, documented, and tested implementation
+
+
+
+
+\end{lstlisting}
+\end{codebox}
+
+\vspace{2cm}
+
+\subsection{Project Outcomes}
+
+\subsubsection{Achievements}
+\begin{itemize}[leftmargin=*]
+    \item \textit{[List major achievements]}
+\end{itemize}
+
+\vspace{1cm}
+
+\subsubsection{Limitations}
+\begin{itemize}[leftmargin=*]
+    \item \textit{[List system limitations and constraints]}
+\end{itemize}
+
+\vspace{1cm}
+
+\subsubsection{Future Improvements}
+\begin{itemize}[leftmargin=*]
+    \item \textit{[Suggest potential enhancements]}
+\end{itemize}
+
+\vspace{1cm}
+
+\subsection{Lessons Learned}
+
+\subsubsection{Technical Insights}
+\textit{[Document key technical lessons learned]}
+
+\vspace{2cm}
+
+\subsubsection{Project Management}
+\textit{[Document lessons about teamwork, timeline management, etc.]}
+
+\vspace{2cm}
+
+\subsection{Week 5 Deliverables}
+\begin{itemize}[leftmargin=*]
+    \item[$\square$] Complete system demonstration
+    \item[$\square$] Final tested code for all nodes
+    \item[$\square$] Comprehensive protocol documentation
+    \item[$\square$] Test results and performance metrics
+    \item[$\square$] Video and photo documentation
+    \item[$\square$] Final project report
+    \item[$\square$] Presentation materials
+\end{itemize}
+
+\vspace{1cm}
+
+% Space for additional notes
+\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
+\vspace{3cm}
+\end{tcolorbox}
+
+% ===================================
+% CONCLUSION
+% ===================================
+\newpage
+\section{Conclusion}
+
+\subsection{Project Summary}
+
+\textit{[To be completed after Week 5 - Provide comprehensive project summary]}
+
+\vspace{3cm}
+
+\subsection{Technical Contributions}
+
+\textit{[Highlight the technical contributions and innovations of your project]}
+
+\vspace{3cm}
+
+\subsection{Team Reflection}
+
+\textit{[Each team member's reflection on their contribution and learning experience]}
+
+\vspace{3cm}
+
+\subsection{Acknowledgments}
+
+We would like to express our sincere gratitude to:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Dr. Yasmine Zaghloul} for her invaluable guidance, expertise, and continuous support throughout this project
+    \item \textbf{Eng. Omar Hemeda} for his technical assistance and practical advice during development
+    \item \textbf{Eng. Amr Khaled} for providing laboratory resources and ensuring safe equipment usage
+    \item \textbf{German International University} for providing the facilities and resources necessary for this project
+\end{itemize}
+
+% ===================================
+% REFERENCES
+% ===================================
+\newpage
+\section{References}
+
+\begin{enumerate}[leftmargin=*]
+    \item ESP-NOW Protocol Documentation. Espressif Systems. \url{https://www.espressif.com/}
+    
+    \item "ESPNOW for beginners! \#ESP32 \#ESP8266" Tutorial Video. \url{https://www.youtube.com/watch?v=Ydi0M3Xd_vs}
+    
+    \item Egyptian Knowledge Bank (EKB). Accessed for wireless sensor network research. \url{https://www.ekb.eg/}
+    
+    \item Arduino ESP32 Documentation. \url{https://docs.arduino.cc/}
+    
+    \item \textit{[Add additional references as needed during the project]}
+\end{enumerate}
+
+% ===================================
+% APPENDICES
+% ===================================
+\newpage
+\appendix
+
+\section{Complete Source Code}
+\textit{[Include complete, final source code listings]}
+
+\vspace{1cm}
+
+\section{Circuit Diagrams}
+\textit{[Include detailed circuit diagrams and wiring schematics]}
+
+\vspace{1cm}
+
+\section{Component Specifications}
+\textit{[Include datasheets or specifications for major components]}
+
+\vspace{1cm}
+
+\section{Additional Test Results}
+\textit{[Include supplementary test data and analysis]}
+
+\end{document}
