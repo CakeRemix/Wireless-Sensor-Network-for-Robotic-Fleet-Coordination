@@ -1,4 +1,4 @@
-#include <Arduino.h>
+/*#include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
 
@@ -6,8 +6,8 @@
 #define ECHO_PIN 18
 
 // ⚠️ Replace with your actual MAC addresses
-#define BASE_MAC {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC}   // Base ESP32
-#define PEER_MAC {0x24, 0x6F, 0x28, 0x44, 0x55, 0x66}   // Robot 2
+#define BASE_MAC {0xCC, 0xDB, 0xA7, 0x97, 0x7B, 0x6C}   // Base ESP32
+#define PEER_MAC {0xCC, 0xDB, 0xA7, 0x97, 0x88, 0x58}   // Robot 1 red
 
 const char* ROBOT_ID = "R1";   // This is Robot 1
 int posX = 0;  // Set starting position in the grid
@@ -90,4 +90,46 @@ void loop() {
   sendDataTo(peer_mac);
 
   delay(3000); // every 3 seconds
+}*/
+#include <esp_now.h>
+#include <WiFi.h>
+
+bool receivedValue = false;
+
+// NEW ESP32 Core 3.x receive callback
+void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len) {
+  if (len == sizeof(bool)) {
+    memcpy(&receivedValue, data, sizeof(bool));
+
+    Serial.print("Received: ");
+    Serial.println(receivedValue ? "BLACK detected (true)" :
+                                   "WHITE detected (false)");
+  } else {
+    Serial.println("Received unknown data");
+  }
 }
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW init failed!");
+    return;
+  }
+
+  esp_now_register_recv_cb(onReceive);
+
+  Serial.println("Robot 2 Ready.");
+}
+
+void loop() {
+  // nothing needed here
+}
+
+
+
+
+
