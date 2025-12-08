@@ -30,12 +30,16 @@ char cellToChar(CellType c) {
 }
 
 // ---------- MESSAGE FORMAT (MUST MATCH ROBOTS) ----------
-struct MapMessage {
-  uint8_t srcId;   // 1 = Robot1, 2 = Robot2
-  uint8_t row;     // 0..3
-  uint8_t col;     // 0..3
-  uint8_t cell;    // CellType value
-};
+typedef struct __attribute__((packed)) {
+  uint8_t type;      // MSG_TYPE_MAP_UPDATE = 1
+  uint8_t sourceId;  // 1 = Robot1, 2 = Robot2
+  uint8_t row;       // 1..4
+  uint8_t col;       // 1..4
+  uint8_t value;     // CellType value
+  uint8_t hop;       // 0 = original, 1 = forwarded
+} MapMessage;
+
+#define MSG_TYPE_MAP_UPDATE 1
 
 // ---------- WEB SERVER ----------
 WebServer server(80);
@@ -66,38 +70,73 @@ void handleMapData() {
   }
   
   json += "]}";
+  
+  // Add headers to prevent caching and allow CORS
+  server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  server.sendHeader("Pragma", "no-cache");
+  server.sendHeader("Expires", "0");
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  
   server.send(200, "application/json", json);
+  
+  // Debug: print what we're sending
+  Serial.print("Sending map data: ");
+  Serial.println(json);
 }
 
 // ---------- ESP-NOW RECEIVE CALLBACK (ESP32 core 3.x) ----------
 void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len) {
   if (len != sizeof(MapMessage)) {
-    Serial.println("Received packet with unexpected size");
+    Serial.print("Received packet with unexpected size: ");
+    Serial.print(len);
+    Serial.print(" expected: ");
+    Serial.println(sizeof(MapMessage));
     return;
   }
 
   MapMessage msg;
   memcpy(&msg, data, sizeof(msg));
 
-  if (msg.row >= 4 || msg.col >= 4) {
-    Serial.println("Received invalid coordinates");
+  // Check if it's a map update message
+  if (msg.type != MSG_TYPE_MAP_UPDATE) {
+    Serial.println("Received non-map-update message");
     return;
   }
 
-  grid[msg.row][msg.col] = static_cast<CellType>(msg.cell);
+  // RobotNode uses 1-based indexing (1..4), convert to 0-based (0..3)
+  int r = msg.row - 1;
+  int c = msg.col - 1;
+
+  if (r < 0 || r >= 4 || c < 0 || c >= 4) {
+    Serial.print("Received invalid coordinates: (");
+    Serial.print(msg.row);
+    Serial.print(",");
+    Serial.print(msg.col);
+    Serial.println(")");
+    return;
+  }
+
+  grid[r][c] = static_cast<CellType>(msg.value);
 
   Serial.print("Update from Robot ");
-  Serial.print(msg.srcId);
+  Serial.print(msg.sourceId);
   Serial.print(" -> cell (");
-  Serial.print(msg.row + 1);
+  Serial.print(msg.row);
   Serial.print(",");
-  Serial.print(msg.col + 1);
+  Serial.print(msg.col);
   Serial.print(") = ");
-  Serial.println(msg.cell);
+  Serial.print(msg.value);
+  Serial.print(" (");
+  Serial.print(cellToChar(static_cast<CellType>(msg.value)));
+  Serial.println(")");
 
-  // Re-broadcast the same update to both robots
-  esp_now_send(ROBOT1_MAC, data, len);
-  esp_now_send(ROBOT2_MAC, data, len);
+  // Re-broadcast the same update to both robots (only if not already forwarded)
+  if (msg.hop == 0) {
+    MapMessage fwd = msg;
+    fwd.hop = 1;
+    esp_now_send(ROBOT1_MAC, (uint8_t*)&fwd, sizeof(fwd));
+    esp_now_send(ROBOT2_MAC, (uint8_t*)&fwd, sizeof(fwd));
+  }
 }
 
 // ---------- SETUP ----------

@@ -155,8 +155,18 @@ void sendMapUpdate(uint8_t row, uint8_t col, uint8_t value) {
   msg.value    = value;
   msg.hop      = 0;   // original info
 
-  // Send only to the *other* robot.
+  // Send to BOTH base station and other robot
+  esp_now_send(BASE_MAC, (uint8_t*)&msg, sizeof(msg));
   esp_now_send(OTHER_ROBOT_MAC, (uint8_t*)&msg, sizeof(msg));
+  
+  Serial.print("[Robot");
+  Serial.print(ROBOT_ID);
+  Serial.print("] Sent update: (");
+  Serial.print(row);
+  Serial.print(",");
+  Serial.print(col);
+  Serial.print(") = ");
+  Serial.println(value);
 }
 
 void forwardMapMessage(const MapMessage &msgIn) {

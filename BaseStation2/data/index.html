@@ -277,8 +277,12 @@
 
     async function updateGrid() {
       try {
-        const res = await fetch('/map');
+        // Add timestamp to prevent caching
+        const timestamp = new Date().getTime();
+        const res = await fetch(`/map?t=${timestamp}`);
         const data = await res.json();
+
+        console.log('Map data received:', data); // Debug log
 
         // data.grid is a 4x4 array
         for (let r = 0; r < 4; r++) {
