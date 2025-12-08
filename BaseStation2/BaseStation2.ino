@@ -1,104 +1,162 @@
-#include <Wire.h>
-#include <MPU6050.h>
+#include <WiFi.h>
+#include <esp_now.h>
+#include <WebServer.h>
+#include <SPIFFS.h>
 
-MPU6050 mpu;
+// ---------- MAC ADDRESSES OF ROBOTS ----------
+uint8_t ROBOT1_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x88, 0x58}; // Robot 1
+uint8_t ROBOT2_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x76, 0x9C}; // Robot 2
 
-// Thresholds
-const int FORWARD_SPIKE = 2500;
-const int BACKWARD_SPIKE = -2500;
-const int MOTION_VARIANCE_THRESHOLD = 300;   // Movement vibrations
-const int STOP_VARIANCE_THRESHOLD = 80;      // Stillness
-const int GYRO_LEFT = 150;
-const int GYRO_RIGHT = -150;
+// ---------- MAP DEFINITIONS ----------
+enum CellType : uint8_t {
+  CELL_UNKNOWN  = 0,
+  CELL_CLEAR    = 1,
+  CELL_OBSTACLE = 2,
+  CELL_WHITE    = 3,
+  CELL_BLACK    = 4
+};
 
-int16_t ax, ay, az;
-int16_t gx, gy, gz;
+CellType grid[4][4];  // 4x4 board
 
-// For motion detection
-const int WINDOW = 20;
-int axHistory[WINDOW];
-int indexPos = 0;
-bool bufferFilled = false;
+char cellToChar(CellType c) {
+  switch (c) {
+    case CELL_CLEAR:    return '.';
+    case CELL_OBSTACLE: return 'X';
+    case CELL_WHITE:    return 'W';
+    case CELL_BLACK:    return 'B';
+    case CELL_UNKNOWN:
+    default:            return '?';
+  }
+}
 
-String state = "STOP";
+// ---------- MESSAGE FORMAT (MUST MATCH ROBOTS) ----------
+struct MapMessage {
+  uint8_t srcId;   // 1 = Robot1, 2 = Robot2
+  uint8_t row;     // 0..3
+  uint8_t col;     // 0..3
+  uint8_t cell;    // CellType value
+};
 
+// ---------- WEB SERVER ----------
+WebServer server(80);
+
+// Serve the index.html file from SPIFFS
+void handleRoot() {
+  File file = SPIFFS.open("/index.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+// API endpoint to get current map data as JSON
+void handleMapData() {
+  String json = "{\"grid\":[";
+  
+  for (int r = 0; r < 4; r++) {
+    json += "[";
+    for (int c = 0; c < 4; c++) {
+      json += String((int)grid[r][c]);
+      if (c < 3) json += ",";
+    }
+    json += "]";
+    if (r < 3) json += ",";
+  }
+  
+  json += "]}";
+  server.send(200, "application/json", json);
+}
+
+// ---------- ESP-NOW RECEIVE CALLBACK (ESP32 core 3.x) ----------
+void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len) {
+  if (len != sizeof(MapMessage)) {
+    Serial.println("Received packet with unexpected size");
+    return;
+  }
+
+  MapMessage msg;
+  memcpy(&msg, data, sizeof(msg));
+
+  if (msg.row >= 4 || msg.col >= 4) {
+    Serial.println("Received invalid coordinates");
+    return;
+  }
+
+  grid[msg.row][msg.col] = static_cast<CellType>(msg.cell);
+
+  Serial.print("Update from Robot ");
+  Serial.print(msg.srcId);
+  Serial.print(" -> cell (");
+  Serial.print(msg.row + 1);
+  Serial.print(",");
+  Serial.print(msg.col + 1);
+  Serial.print(") = ");
+  Serial.println(msg.cell);
+
+  // Re-broadcast the same update to both robots
+  esp_now_send(ROBOT1_MAC, data, len);
+  esp_now_send(ROBOT2_MAC, data, len);
+}
+
+// ---------- SETUP ----------
 void setup() {
   Serial.begin(115200);
-  Wire.begin(21, 22);
+  delay(1000);
 
-  mpu.initialize();
-  Serial.println("Calibrating...");
-  mpu.CalibrateAccel(30);
-  mpu.CalibrateGyro(30);
-  Serial.println("Ready.");
-}
+  // Initialize SPIFFS
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS Mount Failed");
+    return;
+  }
+  Serial.println("SPIFFS mounted successfully");
 
-int computeVariance() {
-  long sum = 0;
-  long sumSq = 0;
-  int count = bufferFilled ? WINDOW : indexPos;
-
-  for (int i = 0; i < count; i++) {
-    sum += axHistory[i];
-    sumSq += (long)axHistory[i] * axHistory[i];
+  // Init map as unknown
+  for (int r = 0; r < 4; r++) {
+    for (int c = 0; c < 4; c++) {
+      grid[r][c] = CELL_UNKNOWN;
+    }
   }
 
-  long mean = sum / count;
-  long var = (sumSq / count) - (mean * mean);
-  return abs(var);
+  // --- Wi-Fi AP for PC connection ---
+  WiFi.mode(WIFI_AP_STA);
+  if (!WiFi.softAP("RobotBase", "12345678")) {
+    Serial.println("Failed to start AP!");
+  } else {
+    Serial.print("AP started. Connect PC to SSID 'RobotBase' password '12345678'\nIP: ");
+    Serial.println(WiFi.softAPIP());
+  }
+
+  // --- ESP-NOW setup ---
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW init failed");
+    return;
+  }
+
+  esp_now_register_recv_cb(onReceive);
+
+  esp_now_peer_info_t peer;
+  memset(&peer, 0, sizeof(peer));
+  peer.channel = 0;     // same channel as AP
+  peer.encrypt = false;
+
+  // Add Robot 1
+  memcpy(peer.peer_addr, ROBOT1_MAC, 6);
+  esp_now_add_peer(&peer);
+
+  // Add Robot 2
+  memcpy(peer.peer_addr, ROBOT2_MAC, 6);
+  esp_now_add_peer(&peer);
+
+  // --- Web server routes ---
+  server.on("/", handleRoot);
+  server.on("/map", handleMapData);  // API endpoint for map data
+  server.begin();
+  Serial.println("HTTP server started on port 80");
 }
 
+// ---------- LOOP ----------
 void loop() {
-  mpu.getAcceleration(&ax, &ay, &az);
-  mpu.getRotation(&gx, &gy, &gz);
-
-  // Store AX samples for variance
-  axHistory[indexPos] = ax;
-  indexPos++;
-  if (indexPos >= WINDOW) {
-    indexPos = 0;
-    bufferFilled = true;
-  }
-
-  int variance = computeVariance();
-
-  // Detect start of motion
-  if (ax > FORWARD_SPIKE) {
-    state = "FORWARD (start)";
-  }
-  if (ax < BACKWARD_SPIKE) {
-    state = "BACKWARD (start)";
-  }
-
-  // Detect ongoing forward movement 
-  if (variance > MOTION_VARIANCE_THRESHOLD && state.startsWith("FORWARD")) {
-    state = "FORWARD (moving)";
-  }
-
-  // Detect continuous backward movement
-  if (variance > MOTION_VARIANCE_THRESHOLD && state.startsWith("BACKWARD")) {
-    state = "BACKWARD (moving)";
-  }
-
-  // Detect STOP
-  if (variance < STOP_VARIANCE_THRESHOLD && abs(gz) < 50) {
-    state = "STOP";
-  }
-
-  // Turning detection
-  if (gz > GYRO_LEFT) {
-    Serial.println("TURN LEFT");
-  } 
-  else if (gz < GYRO_RIGHT) {
-    Serial.println("TURN RIGHT");
-  }
-
-  Serial.print("Motion state: ");
-  Serial.print(state);
-  Serial.print(" | AX: ");
-  Serial.print(ax);
-  Serial.print(" | Var: ");
-  Serial.println(variance);
-
-  delay(50);
+  server.handleClient();   // Handle browser requests
 }

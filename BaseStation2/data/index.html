@@ -262,35 +262,65 @@
       for (let x = 0; x < 4; x++) {
         const cell = document.createElement('div');
         cell.className = 'cell';
-        cell.id = `cell-${x}-${y}`;
-        cell.setAttribute('data-coords', `(${x}, ${y})`);
+        cell.id = `cell-${y}-${x}`;
+        cell.setAttribute('data-coords', `(${y}, ${x})`);
         grid.appendChild(cell);
       }
     }
+
+    // Cell type constants (match Arduino enum)
+    const CELL_UNKNOWN = 0;
+    const CELL_CLEAR = 1;
+    const CELL_OBSTACLE = 2;
+    const CELL_WHITE = 3;
+    const CELL_BLACK = 4;
 
     async function updateGrid() {
       try {
         const res = await fetch('/map');
         const data = await res.json();
 
-        // Clear previous robot markers
-        document.querySelectorAll('.cell').forEach(cell => {
-          cell.classList.remove('robot');
-          if (!cell.classList.contains('obstacle')) {
-            cell.textContent = '';
-          }
-        });
+        // data.grid is a 4x4 array
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 4; c++) {
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            if (!cell) continue;
 
-        // Update cell with new data
-        const cell = document.getElementById(`cell-${data.x}-${data.y}`);
-        if (cell) {
-          cell.textContent = data.robot;
-          cell.className = 'cell';
-          
-          if (data.obstacle) {
-            cell.classList.add('obstacle');
-          } else {
-            cell.classList.add('robot');
+            const cellType = data.grid[r][c];
+            
+            // Reset classes
+            cell.className = 'cell';
+            cell.textContent = '';
+
+            // Apply styling based on cell type
+            switch(cellType) {
+              case CELL_CLEAR:
+                cell.textContent = '✓';
+                cell.style.background = 'linear-gradient(135deg, #51cf66 0%, #37b24d 100%)';
+                cell.style.color = 'white';
+                break;
+              case CELL_OBSTACLE:
+                cell.classList.add('obstacle');
+                cell.textContent = '🚫';
+                break;
+              case CELL_WHITE:
+                cell.textContent = 'W';
+                cell.style.background = 'white';
+                cell.style.color = 'black';
+                cell.style.border = '2px solid #999';
+                break;
+              case CELL_BLACK:
+                cell.textContent = 'B';
+                cell.style.background = 'black';
+                cell.style.color = 'white';
+                break;
+              case CELL_UNKNOWN:
+              default:
+                cell.textContent = '?';
+                cell.style.background = 'linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)';
+                cell.style.color = '#999';
+                break;
+            }
           }
         }
       } catch (e) {
