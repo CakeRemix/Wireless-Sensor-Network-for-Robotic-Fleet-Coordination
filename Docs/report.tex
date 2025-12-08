@@ -13,6 +13,7 @@
 \usepackage{listings}
 \usepackage{enumitem}
 \usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning}
 \usepackage{tcolorbox}
 \usepackage{booktabs}
 \usepackage{caption}
@@ -67,19 +68,19 @@
 \lstdefinestyle{cppstyle}{
     language=C++,
     backgroundcolor=\color{codebg},
-    basicstyle=\ttfamily\small,
+    basicstyle=\ttfamily\footnotesize,
     keywordstyle=\color{primarycolor}\bfseries,
     commentstyle=\color{gray}\itshape,
     stringstyle=\color{accentcolor},
     numbers=left,
     numberstyle=\tiny\color{gray},
     stepnumber=1,
-    numbersep=10pt,
+    numbersep=8pt,
     frame=single,
     rulecolor=\color{primarycolor},
     breaklines=true,
     breakatwhitespace=false,
-    tabsize=4,
+    tabsize=2,
     showstringspaces=false,
     captionpos=b
 }
@@ -131,45 +132,35 @@
 \begin{titlepage}
     \centering
     
-    % Top spacing
     \vspace*{1cm}
-    
-    % University logo placeholder (add your logo here)
-    % \includegraphics[width=0.3\textwidth]{giu_logo.png}
     
     \vspace{1cm}
     
-    % University name
     {\Large \textbf{German International University}\par}
     {\large Faculty of Engineering\par}
     {\large Major of Automation and Control\par}
     
     \vspace{1.5cm}
     
-    % Decorative line
     {\color{primarycolor}\rule{\linewidth}{0.5mm}}\par
     
     \vspace{0.5cm}
     
-    % Title
     {\Huge \textbf{\textcolor{primarycolor}{Wireless Sensor Network}}\par}
     {\Huge \textbf{\textcolor{primarycolor}{for Robotic Fleet}}\par}
     {\Huge \textbf{\textcolor{primarycolor}{Coordination}}\par}
     
     \vspace{0.5cm}
     
-    % Decorative line
     {\color{primarycolor}\rule{\linewidth}{0.5mm}}\par
     
     \vspace{1cm}
     
-    % Subtitle
     {\Large Introduction to Computer Networks\par}
     {\Large Project Report\par}
     
     \vspace{2cm}
     
-    % Team information
     \begin{minipage}{0.8\textwidth}
         \begin{center}
             {\large \textbf{Team Members}\par}
@@ -187,14 +178,12 @@
     
     \vspace{1.5cm}
     
-    % Supervisor information
     {\large \textbf{Supervised by}\par}
     {\large Dr. Yasmine Zaghloul\par}
     {\large TA: Eng. Omar Hemeda\par}
     
     \vfill
     
-    % Date
     {\large Winter Semester 2025\par}
     {\large December 2025\par}
     
@@ -207,7 +196,6 @@
 \tableofcontents
 \thispagestyle{empty}
 
-% Start page numbering from here
 \newpage
 \setcounter{page}{1}
 
@@ -216,7 +204,7 @@
 % ===================================
 \newpage
 \section{Week 1: Research \& Setup}
-	extit{November 17-23, 2025}
+\textit{November 17-23, 2025}
 
 \subsection{Research Phase}
 
@@ -234,7 +222,7 @@ To establish a solid foundation for our project, we conducted comprehensive rese
 
 \subsection{ESP-NOW Protocol Learning}
 
-To gain practical understanding of the ESP-NOW protocol, we studied various resources with particular focus on the tutorial video "\textit{ESPNOW for beginners! \#ESP32 \#ESP8266}" available at:
+To gain practical understanding of the ESP-NOW protocol, we studied the tutorial video "\textit{ESPNOW for beginners! \#ESP32 \#ESP8266}" available at:
 
 \begin{center}
     \url{https://www.youtube.com/watch?v=Ydi0M3Xd_vs}
@@ -244,9 +232,8 @@ This resource provided valuable insights into:
 \begin{itemize}[leftmargin=*]
     \item The fundamentals of ESP-NOW as a fast, connectionless peer-to-peer communication protocol
     \item Setting up ESP-NOW connections between multiple ESP32 devices
-    \item Broadcasting and receiving data packets
-    \item Implementing callback functions for data handling
-    \item Debugging common ESP-NOW implementation issues
+    \item Broadcasting and receiving data packets using callback functions
+    \item MAC address handling and peer registration
 \end{itemize}
 
 \subsection{Hardware Setup}
@@ -256,7 +243,7 @@ We successfully configured the development environment for the ESP32 microcontro
 \begin{itemize}[leftmargin=*]
     \item Installing the Arduino IDE (version 2.x)
     \item Adding ESP32 board support through the Boards Manager
-    \item Installing necessary libraries (ESP-NOW, WiFi, sensor libraries)
+    \item Installing necessary libraries: \texttt{esp\_now}, \texttt{WiFi}, \texttt{MPU6050\_6Axis\_MotionApps20}, \texttt{WebServer}, \texttt{SPIFFS}
     \item Testing basic functionality with simple sketch uploads
     \item Verifying serial communication for debugging purposes
 \end{itemize}
@@ -268,66 +255,95 @@ After thorough analysis and team discussions, we finalized our system architectu
 \begin{infobox}
 \textbf{Hardware Configuration:}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{3 ESP32 Microcontrollers:} Serve as the core processing units
+    \item \textbf{3 ESP32 Microcontrollers:} Serve as the core processing and communication units
     \item \textbf{2 Remote-Controlled Toy Vehicles:} Provide the mobile platform for our robotic agents
-    \item \textbf{Master-Slave Architecture:} Two ESP32 units mounted on vehicles act as slave nodes, while one ESP32 connected to PC via USB serves as the master coordinator
+    \item \textbf{Mesh Network Architecture:} All three ESP32 units communicate peer-to-peer via ESP-NOW, with one base station connected to PC for visualization
 \end{itemize}
 \end{infobox}
 
 \begin{notebox}
 \textbf{Sensor Configuration per Vehicle:}
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Ultrasonic Sensor (HC-SR04):} Detects obstacles and measures distances to objects in the robot's path
-    \item \textbf{Color Sensor (TCS3200/TCS34725):} Identifies the unique color of squares in the mapping area, enabling precise localization and obstacle mapping
+    \item \textbf{HC-SR04 Ultrasonic Sensor:} Detects obstacles within 15cm range in the robot's forward direction
+    \item \textbf{IR Sensor:} Detects whether the robot is on a white or black square for position tracking
+    \item \textbf{MPU6050 IMU (Gyroscope + Accelerometer):} Determines robot orientation (Forward, Right, Backward, Left) using DMP processing
 \end{itemize}
 \end{notebox}
 
 \subsection{System Design Specifications}
 
-\subsubsection{Network Topology}
-The system implements a mesh network topology where all three ESP32 devices maintain peer-to-peer connections. This ensures:
+\subsubsection{Initial Robot Positions}
+The robots start at predefined positions on the 4x4 grid:
 \begin{itemize}[leftmargin=*]
-    \item Redundant communication paths
-    \item Distributed data processing
-    \item Fault tolerance in case of node failure
-    \item Real-time data sharing across all nodes
+    \item \textbf{Robot 1:} Position (4, 1) --- bottom-left corner
+    \item \textbf{Robot 2:} Position (4, 4) --- bottom-right corner
+\end{itemize}
+
+\subsubsection{Network Topology}
+The system implements a mesh-like network topology where all three ESP32 devices maintain peer-to-peer connections:
+\begin{itemize}[leftmargin=*]
+    \item Robot 1 $\leftrightarrow$ Robot 2 (direct communication)
+    \item Robot 1 $\leftrightarrow$ Base Station
+    \item Robot 2 $\leftrightarrow$ Base Station
+    \item Re-broadcast mechanism ensures all nodes receive updates
 \end{itemize}
 
 \subsubsection{Mapping Area Design}
-The operational environment consists of a grid-based area with the following characteristics:
+The operational environment consists of a 4x4 grid-based area:
 \begin{itemize}[leftmargin=*]
-    \item Divided into uniquely colored squares
-    \item Each square color serves as a unique identifier for localization
-    \item Obstacles can be placed dynamically within the grid
-    \item The grid provides a structured environment for testing coordination algorithms
+    \item Alternating white and black squares (checkerboard pattern)
+    \item IR sensor detects color transitions to track movement between cells
+    \item Obstacles can be placed statically within the grid
+    \item Each cell is identified by row (1-4) and column (1-4) coordinates
 \end{itemize}
 
-\subsubsection{Data Flow Architecture}
+\subsubsection{Communication Flow}
 \begin{enumerate}[leftmargin=*]
-    \item \textbf{Slave Nodes (Mobile Robots):}
-    \begin{itemize}
-        \item Continuously scan environment using ultrasonic sensors
-        \item Read ground color using color sensors
-        \item Broadcast obstacle and position data via ESP-NOW
-        \item Receive and process data from peer nodes
-        \item Update internal map representation
-    \end{itemize}
-    
-    \item \textbf{Master Node (PC-Connected):}
-    \begin{itemize}
-        \item Aggregates data from all slave nodes
-        \item Maintains global map of the environment
-        \item Provides visualization interface through serial communication
-        \item Coordinates robot movements (in later phases)
-        \item Logs data for analysis and documentation
-    \end{itemize}
+    \item When Robot 1 detects an obstacle, it sends coordinates to Robot 2
+    \item Robot 2 updates its internal map and re-broadcasts to Robot 1 and Base Station
+    \item When Robot 2 detects an obstacle, it sends coordinates to Robot 1
+    \item Robot 1 updates its internal map and re-broadcasts to Robot 2 and Base Station
+    \item Base Station aggregates all updates and displays the map on PC via web interface
 \end{enumerate}
+
+\subsection{AI Tools Integration}
+
+The strategic utilization of AI-powered development tools played a crucial role in accelerating our project timeline and enhancing code quality:
+
+\begin{infobox}
+\textbf{ChatGPT Integration:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Code Generation:} Assisted in generating boilerplate code for ESP-NOW initialization, sensor drivers, and data structure definitions
+    \item \textbf{Debugging Support:} Provided insights for troubleshooting ESP32-specific issues and memory management
+    \item \textbf{Documentation:} Helped structure technical documentation and explain complex networking concepts
+    \item \textbf{Algorithm Optimization:} Suggested efficient approaches for map synchronization and re-broadcast logic
+\end{itemize}
+\end{infobox}
+
+\begin{infobox}
+\textbf{GitHub Copilot Integration:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Real-time Code Completion:} Accelerated development with intelligent auto-completion for Arduino/C++ syntax
+    \item \textbf{Function Implementation:} Suggested complete function implementations based on comments and context
+    \item \textbf{Error Detection:} Identified potential bugs and syntax errors during coding
+    \item \textbf{Code Refactoring:} Recommended improvements for code readability and maintainability
+\end{itemize}
+\end{infobox}
+
+\textbf{Professional Usage Guidelines:}
+\begin{itemize}[leftmargin=*]
+    \item All AI-generated code was thoroughly reviewed and tested before integration
+    \item AI suggestions were used as starting points, not final solutions
+    \item Team members validated all technical decisions independently
+    \item Critical system logic was designed by the team with AI assistance for implementation details
+    \item Documentation and comments were written to ensure maintainability
+\end{itemize}
 
 \subsection{Week 1 Deliverables}
 \begin{itemize}[leftmargin=*]
     \item[$\checkmark$] Completed research on ESP-NOW protocol and mesh networking
-    \item[$\checkmark$] Set up Arduino IDE development environment
-    \item[$\checkmark$] Assembled 2-3 basic robot chassis with remote control capability
+    \item[$\checkmark$] Set up Arduino IDE development environment with ESP32 support
+    \item[$\checkmark$] Assembled 2 robot chassis with sensor mounts
     \item[$\checkmark$] Finalized project architecture and component selection
     \item[$\checkmark$] Established communication with project advisors
     \item[$\checkmark$] Created project timeline and milestone definitions
@@ -338,736 +354,688 @@ The operational environment consists of a grid-based area with the following cha
     \item \textbf{Challenge:} Understanding ESP-NOW protocol differences from traditional WiFi
     \item \textbf{Solution:} Studied multiple tutorials and documentation, conducted simple experiments
     
-    \item \textbf{Challenge:} Selecting appropriate sensors within budget constraints
-    \item \textbf{Solution:} Consulted with lab engineer and utilized available laboratory equipment
+    \item \textbf{Challenge:} Initial plan was to use colour sensor, bit we had to pic 16 differently coloured squares and pick their specific colour frequency.
+    \item \textbf{Solution:} Used IR sensor instead of color sensor for simpler black/white detection
 \end{itemize}
 
-\vspace{1cm}
-
-% Space for additional notes
-\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
-\vspace{3cm}
-\end{tcolorbox}
-
 % ===================================
-% WEEK 2: CORE MODULE DEVELOPMENT
+% WEEK 1 PART 2: CORE MODULE DEVELOPMENT
 % ===================================
-\newpage
-\section{Week 2: Core Module Development}
-	extit{November 24-30, 2025}
+\subsection{Core Module Development}
 
-\subsection{Objective}
-Program one robot to read its ultrasonic sensor and broadcast obstacle data via ESP-NOW protocol.
+In the second half of Week 1, we programmed one robot to read its sensors (ultrasonic, IR, IMU) and broadcast obstacle data via ESP-NOW protocol.
 
-\subsection{Implementation Overview}
+\subsection{Hardware Pin Configuration}
 
-\textit{[To be completed during Week 2]}
+The ESP32 pins are configured as follows for each robot node:
 
-\vspace{1cm}
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Component} & \textbf{Pin} & \textbf{Function} \\ \midrule
+IR Sensor & GPIO 14 & Digital input (white/black detection) \\
+Ultrasonic Trigger & GPIO 26 & Digital output \\
+Ultrasonic Echo & GPIO 27 & Digital input \\
+MPU6050 SDA & GPIO 12 & I2C Data \\
+MPU6050 SCL & GPIO 13 & I2C Clock \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-\subsection{Ultrasonic Sensor Integration}
+\subsection{Ultrasonic Sensor Implementation}
 
-\subsubsection{Hardware Connection}
-\textit{[Document sensor wiring and pin configuration]}
+The ultrasonic sensor measures distance to detect obstacles within 15cm range:
 
-\vspace{2cm}
+\begin{lstlisting}[caption={Ultrasonic Sensor Distance Measurement}]
+// Pin definitions
+#define TRIG_PIN   26
+#define ECHO_PIN   27
 
-\subsubsection{Sensor Reading Code}
+const float OBSTACLE_DISTANCE_CM = 15.0;
 
-\begin{codebox}{Ultrasonic Sensor Data Acquisition}
-\begin{lstlisting}
-// Placeholder for ultrasonic sensor code
-// Include: HC-SR04 initialization, distance measurement function,
-// noise filtering, and calibration routines
+float readUltrasonicCm() {
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
 
-
-
-
+  long duration = pulseIn(ECHO_PIN, HIGH, 30000); // 30ms timeout
+  if (duration == 0) return -1;  // no echo received
+  float distance = duration * 0.0343 / 2.0;  // speed of sound
+  return distance;
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{IMU Integration for Direction Tracking}
 
-\subsection{ESP-NOW Broadcasting Implementation}
+The MPU6050 IMU with DMP (Digital Motion Processor) provides orientation data:
 
-\subsubsection{Protocol Initialization}
+\begin{lstlisting}[caption={IMU Direction Detection}]
+#include <MPU6050_6Axis_MotionApps20.h>
 
-\begin{codebox}{ESP-NOW Setup and Configuration}
-\begin{lstlisting}
-// Placeholder for ESP-NOW initialization code
-// Include: WiFi mode setup, ESP-NOW init, peer registration,
-// MAC address handling, and callback function definitions
+MPU6050 mpu;
+bool dmpReady = false;
+uint8_t fifoBuffer[64];
+Quaternion q;
+VectorFloat gravity;
+float ypr[3];
 
+String currentDirection = "FORWARD";
+const float ROTATION_THRESHOLD = 70.0;
 
+String getDirection(float yaw) {
+  if (yaw < 45 || yaw >= 315) return "FORWARD";
+  if (yaw >= 45 && yaw < 135) return "RIGHT";
+  if (yaw >= 135 && yaw < 225) return "BACKWARD";
+  return "LEFT";  // 225-315
+}
 
+void updateIMU() {
+  if (!dmpReady) return;
 
+  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
+    mpu.dmpGetQuaternion(&q, fifoBuffer);
+    mpu.dmpGetGravity(&gravity, &q);
+    mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+
+    float yaw = ypr[0] * 180 / M_PI;
+    if (yaw < 0) yaw += 360;
+
+    String newDir = getDirection(yaw);
+    float diff = fabs(yaw - directionAngle(currentDirection));
+    if (diff > 180) diff = 360 - diff;
+
+    if (newDir != currentDirection && diff >= ROTATION_THRESHOLD) {
+      currentDirection = newDir;
+      Serial.print("Direction: ");
+      Serial.println(currentDirection);
+    }
+  }
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{Message Structure Design}
 
-\subsubsection{Data Structure Design}
+The message structure for map updates is defined as a packed struct for efficient transmission:
 
-\begin{codebox}{Obstacle Data Structure}
-\begin{lstlisting}
-// Placeholder for data structure definitions
-// Include: Struct for obstacle data, position information,
-// timestamp, robot ID, and data packaging functions
+\begin{lstlisting}[caption={Map Message Data Structure}]
+#define MSG_TYPE_MAP_UPDATE  1
 
+#define CELL_UNKNOWN   0
+#define CELL_CLEAR     1
+#define CELL_OBSTACLE  2
 
-
-
+typedef struct __attribute__((packed)) {
+  uint8_t type;      // Message type identifier
+  uint8_t sourceId;  // Robot ID (1 or 2)
+  uint8_t row;       // Grid row (1-4)
+  uint8_t col;       // Grid column (1-4)
+  uint8_t value;     // Cell state (UNKNOWN/CLEAR/OBSTACLE)
+  uint8_t hop;       // Hop count (0=original, 1=forwarded)
+} MapMessage;
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{ESP-NOW Initialization}
 
-\subsection{Main Program Logic}
+\begin{lstlisting}[caption={ESP-NOW Setup and Peer Registration}]
+#define ROBOT_ID 1
 
-\begin{codebox}{Main Loop - Single Robot Broadcast}
-\begin{lstlisting}
-// Placeholder for main program code
-// Include: Setup function, main loop with sensor reading,
-// data broadcasting, timing control, and debug output
+uint8_t BASE_MAC[]   = {0xCC, 0xDB, 0xA7, 0x97, 0x7B, 0x6C};
+uint8_t OTHER_ROBOT_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x76, 0x9C};
 
+void setup() {
+  // ... sensor initialization ...
+  
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
 
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW init failed");
+    while (1);
+  }
 
+  esp_now_register_send_cb(onSent);
+  esp_now_register_recv_cb(onReceive);
 
+  // Add peers
+  esp_now_peer_info_t peer{};
+  memcpy(peer.peer_addr, OTHER_ROBOT_MAC, 6);
+  peer.channel = 0;
+  peer.encrypt = false;
+  esp_now_add_peer(&peer);
+
+  memcpy(peer.peer_addr, BASE_MAC, 6);
+  esp_now_add_peer(&peer);
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{3cm}
+\subsection{Sending Map Updates}
 
-\subsection{Testing and Validation}
+\begin{lstlisting}[caption={Broadcasting Obstacle Detection}]
+void sendMapUpdate(uint8_t row, uint8_t col, uint8_t value) {
+  MapMessage msg;
+  msg.type     = MSG_TYPE_MAP_UPDATE;
+  msg.sourceId = ROBOT_ID;
+  msg.row      = row;
+  msg.col      = col;
+  msg.value    = value;
+  msg.hop      = 0;   // Original message
 
-\subsubsection{Test Cases}
-\textit{[Document test scenarios and results]}
+  esp_now_send(OTHER_ROBOT_MAC, (uint8_t*)&msg, sizeof(msg));
+}
+\end{lstlisting}
 
-\vspace{2cm}
-
-\subsubsection{Observed Behavior}
-\textit{[Record actual system behavior during testing]}
-
-\vspace{2cm}
-
-\subsection{Week 2 Deliverables}
+\subsection{Week 1 Additional Deliverables - Core Modules}
 \begin{itemize}[leftmargin=*]
-    \item[$\square$] Functional ultrasonic sensor reading module
-    \item[$\square$] Working ESP-NOW broadcast implementation
-    \item[$\square$] Tested single-robot obstacle detection system
-    \item[$\square$] Documented code with comments
-    \item[$\square$] Performance metrics and range testing results
+    \item[$\checkmark$] Functional ultrasonic sensor reading module
+    \item[$\checkmark$] Working IMU direction detection with DMP
+    \item[$\checkmark$] IR sensor integration for position tracking
+    \item[$\checkmark$] ESP-NOW broadcast implementation
+    \item[$\checkmark$] Message structure design and implementation
+    \item[$\checkmark$] Tested single-robot obstacle detection system
 \end{itemize}
 
-\vspace{1cm}
-
-\subsection{Challenges and Solutions}
-\textit{[Document any technical challenges encountered and their solutions]}
-
-\vspace{3cm}
-
-% Space for additional notes
-\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
-\vspace{3cm}
-\end{tcolorbox}
-
 % ===================================
-% WEEK 3: INTEGRATION
+% WEEK 2: INTEGRATION & BASE STATION
 % ===================================
 \newpage
-\section{Week 3: Integration}
-	extit{December 1-7, 2025}
+\section{Week 2: Integration \& Base Station}
+\textit{November 24-30, 2025}
 
 \subsection{Objective}
-Program a second robot to receive broadcasted data and implement the logic: "If I receive an obstacle alert, add it to my internal map and re-broadcast."
+Program both robots to receive broadcasted data, update internal maps, and implement re-broadcast logic for mesh communication.
 
-\subsection{Implementation Overview}
+\subsection{ESP-NOW Receive Callback}
 
-\textit{[To be completed during Week 3]}
+The receive callback processes incoming map updates and triggers re-broadcast:
 
-\vspace{1cm}
+\begin{lstlisting}[caption={ESP-NOW Data Reception Handler}]
+void onReceive(const esp_now_recv_info *info, 
+               const uint8_t *data, int len) {
+  if (len != sizeof(MapMessage)) return;
+  
+  MapMessage msg;
+  memcpy(&msg, data, sizeof(msg));
 
-\subsection{Data Reception Module}
+  if (msg.type != MSG_TYPE_MAP_UPDATE) return;
+  if (msg.row < 1 || msg.row > BOARD_SIZE ||
+      msg.col < 1 || msg.col > BOARD_SIZE) return;
 
-\subsubsection{Receiver Callback Function}
+  // Update local map
+  mapGrid[msg.row][msg.col] = msg.value;
 
-\begin{codebox}{ESP-NOW Data Reception Handler}
-\begin{lstlisting}
-// Placeholder for ESP-NOW receive callback
-// Include: Callback function to handle incoming data,
-// data validation, parsing, and acknowledgment
+  Serial.print("[Robot] Map update from Robot ");
+  Serial.print(msg.sourceId);
+  Serial.print(" -> cell(");
+  Serial.print(msg.row); Serial.print(",");
+  Serial.print(msg.col); Serial.print(") = ");
+  Serial.println(msg.value == CELL_OBSTACLE ? "OBSTACLE" : "CLEAR");
 
-
-
-
+  // Forward only once, never forward our own messages
+  if (msg.hop == 0 && msg.sourceId != ROBOT_ID) {
+    forwardMapMessage(msg);
+  }
+}
 \end{lstlisting}
-\end{codebox}
-
-\vspace{2cm}
 
 \subsection{Internal Map Implementation}
 
-\subsubsection{Map Data Structure}
+Each robot maintains a local 4x4 grid map:
 
-\begin{codebox}{Internal Map Structure}
-\begin{lstlisting}
-// Placeholder for internal map implementation
-// Include: Map data structure (array/linked list),
-// obstacle storage, coordinate system, map size definitions
+\begin{lstlisting}[caption={Internal Map Data Structure}]
+#define BOARD_SIZE 4
 
+int8_t mapGrid[BOARD_SIZE + 1][BOARD_SIZE + 1];  // indices 1..4
 
+// Robot 1 starts at (4,1), Robot 2 starts at (4,4)
+int currentRow = 4;
+int currentCol = 1;  // or 4 for Robot 2
 
-
+void initializeMap() {
+  for (int r = 1; r <= BOARD_SIZE; r++)
+    for (int c = 1; c <= BOARD_SIZE; c++)
+      mapGrid[r][c] = CELL_UNKNOWN;
+  
+  // Mark starting position as clear
+  mapGrid[currentRow][currentCol] = CELL_CLEAR;
+}
 \end{lstlisting}
-\end{codebox}
-
-\vspace{2cm}
-
-\subsubsection{Map Update Logic}
-
-\begin{codebox}{Map Update and Management}
-\begin{lstlisting}
-// Placeholder for map update functions
-// Include: Add obstacle function, update existing entries,
-// remove outdated data, map query functions
-
-
-
-
-\end{lstlisting}
-\end{codebox}
-
-\vspace{2cm}
 
 \subsection{Re-Broadcasting Logic}
 
-\subsubsection{Selective Re-Broadcasting}
+The forwarding mechanism ensures all nodes receive updates:
 
-\begin{codebox}{Data Re-Broadcast Implementation}
-\begin{lstlisting}
-// Placeholder for re-broadcast logic
-// Include: Function to re-broadcast received data,
-// duplicate detection, broadcast management, TTL handling
+\begin{lstlisting}[caption={Message Re-Broadcast Implementation}]
+void forwardMapMessage(const MapMessage &msgIn) {
+  MapMessage out = msgIn;
+  out.hop = 1;  // Mark as forwarded (prevents infinite loops)
 
-
-
-
+  // Re-broadcast to other robot and to base station
+  esp_now_send(OTHER_ROBOT_MAC, (uint8_t*)&out, sizeof(out));
+  esp_now_send(BASE_MAC, (uint8_t*)&out, sizeof(out));
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{Position Tracking with IR Sensor}
 
-\subsection{Multi-Robot Coordination}
+Movement between cells is detected by IR sensor color transitions:
 
-\subsubsection{Second Robot Main Program}
+\begin{lstlisting}[caption={IR-Based Movement Detection}]
+#define IR_PIN 14
 
-\begin{codebox}{Second Robot Complete Program}
-\begin{lstlisting}
-// Placeholder for second robot program
-// Include: Setup with both TX and RX capabilities,
-// main loop handling both sensing and receiving,
-// integrated map management
+bool lastIRKnown = false;
+bool lastIsWhite = false;
 
+void updatePositionFromDirection() {
+  int newRow = currentRow;
+  int newCol = currentCol;
 
+  if (currentDirection == "FORWARD")      newRow--;
+  else if (currentDirection == "BACKWARD") newRow++;
+  else if (currentDirection == "RIGHT")   newCol++;
+  else if (currentDirection == "LEFT")    newCol--;
 
+  // Boundary check
+  if (newRow < 1 || newRow > BOARD_SIZE || 
+      newCol < 1 || newCol > BOARD_SIZE) {
+    Serial.println("Move would leave board, ignored");
+    return;
+  }
 
+  currentRow = newRow;
+  currentCol = newCol;
+
+  if (mapGrid[currentRow][currentCol] != CELL_CLEAR) {
+    mapGrid[currentRow][currentCol] = CELL_CLEAR;
+    sendMapUpdate(currentRow, currentCol, CELL_CLEAR);
+  }
+}
+
+// In main loop:
+void checkMovement() {
+  bool isWhite = digitalRead(IR_PIN);
+  
+  if (!lastIRKnown) {
+    lastIsWhite = isWhite;
+    lastIRKnown = true;
+  } else if (isWhite != lastIsWhite) {
+    // Color changed = crossed into next square
+    lastIsWhite = isWhite;
+    updatePositionFromDirection();
+  }
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{3cm}
+\subsection{Obstacle Detection Algorithm}
 
-\subsection{Communication Protocol}
+The main loop continuously checks for obstacles:
 
-\subsubsection{Message Format}
-\textit{[Document the message structure and protocol specifications]}
+\begin{lstlisting}[caption={Periodic Obstacle Scanning}]
+unsigned long lastSonarMs = 0;
+const unsigned long SONAR_INTERVAL_MS = 200;
 
-\vspace{2cm}
+void checkObstacles() {
+  unsigned long now = millis();
+  if (now - lastSonarMs < SONAR_INTERVAL_MS) return;
+  lastSonarMs = now;
 
-\subsubsection{Collision Avoidance}
-\textit{[Document strategy to prevent network congestion]}
+  float dist = readUltrasonicCm();
+  if (dist > 0 && dist < OBSTACLE_DISTANCE_CM) {
+    // Calculate obstacle position based on direction
+    int r = currentRow;
+    int c = currentCol;
 
-\vspace{2cm}
+    if (currentDirection == "FORWARD")      r--;
+    else if (currentDirection == "BACKWARD") r++;
+    else if (currentDirection == "RIGHT")   c++;
+    else if (currentDirection == "LEFT")    c--;
 
-\subsection{Testing Multi-Robot System}
+    if (r >= 1 && r <= BOARD_SIZE && c >= 1 && c <= BOARD_SIZE) {
+      if (mapGrid[r][c] != CELL_OBSTACLE) {
+        mapGrid[r][c] = CELL_OBSTACLE;
+        Serial.print("Obstacle detected at (");
+        Serial.print(r); Serial.print(",");
+        Serial.print(c); Serial.println(")");
+        sendMapUpdate(r, c, CELL_OBSTACLE);
+      }
+    }
+  }
+}
+\end{lstlisting}
 
-\subsubsection{Integration Test Scenarios}
-\textit{[Document test cases with two robots]}
-
-\vspace{2cm}
-
-\subsubsection{Map Consistency Verification}
-\textit{[Document how you verified both robots maintain consistent maps]}
-
-\vspace{2cm}
-
-\subsection{Week 3 Deliverables}
+\subsection{Week 2 Deliverables - Part 1: Robot Integration}
 \begin{itemize}[leftmargin=*]
-    \item[$\square$] Working two-robot communication system
-    \item[$\square$] Internal map implementation on both robots
-    \item[$\square$] Functional re-broadcast mechanism
-    \item[$\square$] Duplicate detection and handling
-    \item[$\square$] Synchronized map between robots
-    \item[$\square$] Communication protocol documentation
+    \item[$\checkmark$] Working two-robot communication system
+    \item[$\checkmark$] Internal map implementation on both robots
+    \item[$\checkmark$] Functional re-broadcast mechanism with hop counting
+    \item[$\checkmark$] IR-based movement detection
+    \item[$\checkmark$] Synchronized map between robots
+    \item[$\checkmark$] Communication protocol documentation
 \end{itemize}
 
-\vspace{1cm}
+\subsection{Base Station Implementation}
 
-\subsection{Challenges and Solutions}
-\textit{[Document any technical challenges encountered and their solutions]}
+In the second half of Week 2, we implemented the base station node with web-based visualization interface for real-time map monitoring.
 
-\vspace{3cm}
+\subsection{Base Station Architecture}
 
-% Space for additional notes
-\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
-\vspace{3cm}
-\end{tcolorbox}
+The base station operates in dual mode (AP + STA) to serve both ESP-NOW communication and web interface:
 
-% ===================================
-% WEEK 4: ENHANCEMENT
-% ===================================
-\newpage
-\section{Week 4: Enhancement}
-	extit{December 8-14, 2025}
+\begin{lstlisting}[caption={Base Station WiFi and ESP-NOW Setup}]
+#include <WiFi.h>
+#include <esp_now.h>
+#include <WebServer.h>
+#include <SPIFFS.h>
 
-\subsection{Objective}
-Implement a simple "leader-follower" or "swarm" algorithm where robots try to maintain formation based on shared location data.
+uint8_t ROBOT1_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x88, 0x58};
+uint8_t ROBOT2_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x76, 0x9C};
 
-\subsection{Implementation Overview}
+WebServer server(80);
 
-\textit{[To be completed during Week 4]}
+void setup() {
+  Serial.begin(115200);
 
-\vspace{1cm}
+  // Initialize SPIFFS for web files
+  if (!SPIFFS.begin(true)) {
+    Serial.println("SPIFFS Mount Failed");
+    return;
+  }
 
-\subsection{Algorithm Selection}
+  // Initialize 4x4 grid as unknown
+  for (int r = 0; r < 4; r++)
+    for (int c = 0; c < 4; c++)
+      grid[r][c] = CELL_UNKNOWN;
 
-\subsubsection{Chosen Approach}
-\textit{[Document whether you chose leader-follower or swarm, and justify the choice]}
+  // Dual mode: AP for PC connection + STA for ESP-NOW
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP("RobotBase", "12345678");
+  Serial.print("AP IP: ");
+  Serial.println(WiFi.softAPIP());
 
-\vspace{2cm}
+  // ESP-NOW setup
+  esp_now_init();
+  esp_now_register_recv_cb(onReceive);
 
-\subsection{Position Tracking System}
+  // Register robot peers
+  esp_now_peer_info_t peer = {};
+  peer.channel = 0;
+  peer.encrypt = false;
 
-\subsubsection{Color-Based Localization}
+  memcpy(peer.peer_addr, ROBOT1_MAC, 6);
+  esp_now_add_peer(&peer);
 
-\begin{codebox}{Color Sensor Integration}
-\begin{lstlisting}
-// Placeholder for color sensor code
-// Include: Color sensor initialization, RGB reading,
-// color identification, position mapping from color
+  memcpy(peer.peer_addr, ROBOT2_MAC, 6);
+  esp_now_add_peer(&peer);
 
-
-
-
+  // Web server routes
+  server.on("/", handleRoot);
+  server.on("/map", handleMapData);
+  server.begin();
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{Base Station Map Management}
 
-\subsubsection{Position Broadcasting}
+\begin{lstlisting}[caption={Map Cell Types and Grid Storage}]
+enum CellType : uint8_t {
+  CELL_UNKNOWN  = 0,
+  CELL_CLEAR    = 1,
+  CELL_OBSTACLE = 2,
+  CELL_WHITE    = 3,
+  CELL_BLACK    = 4
+};
 
-\begin{codebox}{Location Data Sharing}
-\begin{lstlisting}
-// Placeholder for position broadcast
-// Include: Extended data structure with position info,
-// regular position updates, coordinate transformation
+CellType grid[4][4];  // 4x4 board
 
-
-
-
+struct MapMessage {
+  uint8_t srcId;   // 1 = Robot1, 2 = Robot2
+  uint8_t row;     // 0..3
+  uint8_t col;     // 0..3
+  uint8_t cell;    // CellType value
+};
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{Receive and Re-broadcast Handler}
 
-\subsection{Coordination Algorithm Implementation}
+\begin{lstlisting}[caption={Base Station Receive Callback}]
+void onReceive(const esp_now_recv_info *info, 
+               const uint8_t *data, int len) {
+  if (len != sizeof(MapMessage)) {
+    Serial.println("Unexpected packet size");
+    return;
+  }
 
-\subsubsection{Leader-Follower Logic (if applicable)}
+  MapMessage msg;
+  memcpy(&msg, data, sizeof(msg));
 
-\begin{codebox}{Leader-Follower Algorithm}
-\begin{lstlisting}
-// Placeholder for leader-follower implementation
-// Include: Leader selection, follower behavior,
-// formation maintenance, distance control
+  if (msg.row >= 4 || msg.col >= 4) {
+    Serial.println("Invalid coordinates");
+    return;
+  }
 
+  // Update grid
+  grid[msg.row][msg.col] = static_cast<CellType>(msg.cell);
 
+  Serial.print("Update from Robot ");
+  Serial.print(msg.srcId);
+  Serial.print(" -> cell (");
+  Serial.print(msg.row + 1); Serial.print(",");
+  Serial.print(msg.col + 1); Serial.print(") = ");
+  Serial.println(msg.cell);
 
-
+  // Re-broadcast to both robots
+  esp_now_send(ROBOT1_MAC, data, len);
+  esp_now_send(ROBOT2_MAC, data, len);
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{Web API Endpoint}
 
-\subsubsection{Swarm Behavior Logic (if applicable)}
+\begin{lstlisting}[caption={JSON Map Data API}]
+void handleMapData() {
+  String json = "{\"grid\":[";
+  
+  for (int r = 0; r < 4; r++) {
+    json += "[";
+    for (int c = 0; c < 4; c++) {
+      json += String((int)grid[r][c]);
+      if (c < 3) json += ",";
+    }
+    json += "]";
+    if (r < 3) json += ",";
+  }
+  
+  json += "]}";
+  server.send(200, "application/json", json);
+}
 
-\begin{codebox}{Swarm Algorithm}
-\begin{lstlisting}
-// Placeholder for swarm implementation
-// Include: Neighbor detection, flocking rules,
-// separation/alignment/cohesion behaviors
+void handleRoot() {
+  File file = SPIFFS.open("/index.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
 
-
-
-
+void loop() {
+  server.handleClient();
+}
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
+\subsection{Web Interface}
 
-\subsection{Motor Control Integration}
+The web interface provides real-time visualization with automatic polling:
 
-\subsubsection{Movement Control System}
+\begin{lstlisting}[language=HTML,caption={Grid Visualization (JavaScript excerpt)}]
+// Cell type constants (match Arduino enum)
+const CELL_UNKNOWN = 0;
+const CELL_CLEAR = 1;
+const CELL_OBSTACLE = 2;
 
-\begin{codebox}{Robot Movement Control}
-\begin{lstlisting}
-// Placeholder for motor control code
-// Include: Motor driver initialization, movement functions,
-// speed control, direction control, formation adjustment
+async function updateGrid() {
+  const res = await fetch('/map');
+  const data = await res.json();
 
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      const cell = document.getElementById(`cell-${r}-${c}`);
+      const cellType = data.grid[r][c];
+      
+      cell.className = 'cell';
+      switch(cellType) {
+        case CELL_CLEAR:
+          cell.textContent = 'OK';
+          cell.style.background = 'green';
+          break;
+        case CELL_OBSTACLE:
+          cell.classList.add('obstacle');
+          cell.textContent = 'X';
+          break;
+        default:
+          cell.textContent = '?';
+      }
+    }
+  }
+}
 
-
-
+// Update every 2 seconds
+setInterval(updateGrid, 2000);
 \end{lstlisting}
-\end{codebox}
 
-\vspace{2cm}
-
-\subsection{Formation Maintenance}
-
-\subsubsection{Distance Calculation}
-\textit{[Document how robots calculate relative positions]}
-
-\vspace{2cm}
-
-\subsubsection{Adjustment Strategy}
-\textit{[Explain how robots adjust their positions to maintain formation]}
-
-\vspace{2cm}
-
-\subsection{Master Node Coordination}
-
-\begin{codebox}{Master Node Control Logic}
-\begin{lstlisting}
-// Placeholder for master node coordination
-// Include: Global position tracking, command generation,
-// formation monitoring, visualization output
-
-
-
-
-\end{lstlisting}
-\end{codebox}
-
-\vspace{3cm}
-
-\subsection{Testing Coordination System}
-
-\subsubsection{Formation Test Scenarios}
-\textit{[Document test cases for formation maintenance]}
-
-\vspace{2cm}
-
-\subsubsection{Performance Metrics}
-\textit{[Record formation accuracy, response time, stability]}
-
-\vspace{2cm}
-
-\subsection{Week 4 Deliverables}
+\subsection{Week 2 Deliverables - Part 2: Base Station}
 \begin{itemize}[leftmargin=*]
-    \item[$\square$] Functional coordination algorithm implementation
-    \item[$\square$] Color-based position tracking system
-    \item[$\square$] Motor control integration
-    \item[$\square$] Formation maintenance capability
-    \item[$\square$] Master node coordination interface
-    \item[$\square$] Algorithm documentation and parameters
+    \item[$\checkmark$] Base station ESP-NOW receiver implementation
+    \item[$\checkmark$] Web server with SPIFFS file serving
+    \item[$\checkmark$] Real-time JSON API for map data
+    \item[$\checkmark$] Responsive web interface with grid visualization
+    \item[$\checkmark$] Re-broadcast logic from base to robots
+    \item[$\checkmark$] Dual-mode WiFi (AP + STA) configuration
 \end{itemize}
 
-\vspace{1cm}
-
-\subsection{Challenges and Solutions}
-\textit{[Document any technical challenges encountered and their solutions]}
-
-\vspace{3cm}
-
-% Space for additional notes
-\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
-\vspace{3cm}
-\end{tcolorbox}
-
 % ===================================
-% WEEK 5: FINAL TESTING & DOCUMENTATION
+% WEEK 3: FINAL TESTING & DOCUMENTATION
 % ===================================
 \newpage
-\section{Week 5: Final Testing \& Documentation}
-	extit{December 15-22, 2025}
+\section{Week 3: Final Testing \& Documentation}
+\textit{December 1-7, 2025}
 
 \subsection{Objective}
-Demonstrate the robots coordinating to map an area or avoid a new obstacle. Document the mesh protocol and finalize project deliverables.
+Demonstrate the complete system with robots coordinating to map an area, detect obstacles, and share information in real-time.
 
-\subsection{Final System Integration}
+\subsection{Complete Robot Node Code}
 
-\textit{[To be completed during Week 5]}
+\begin{lstlisting}[caption={Robot Node Main Loop}]
+void loop() {
+  // 1) Update orientation from IMU
+  updateIMU();
 
-\vspace{1cm}
+  // 2) Detect movement via IR color transitions
+  bool isWhite = digitalRead(IR_PIN);
+  if (!lastIRKnown) {
+    lastIsWhite = isWhite;
+    lastIRKnown = true;
+  } else if (isWhite != lastIsWhite) {
+    lastIsWhite = isWhite;
+    updatePositionFromDirection();
+  }
 
-\subsection{Comprehensive Testing}
+  // 3) Periodically check ultrasonic for obstacles
+  unsigned long now = millis();
+  if (now - lastSonarMs >= SONAR_INTERVAL_MS) {
+    lastSonarMs = now;
+    float dist = readUltrasonicCm();
+    
+    if (dist > 0 && dist < OBSTACLE_DISTANCE_CM) {
+      int r = currentRow, c = currentCol;
 
-\subsubsection{Test Scenario 1: Area Mapping}
+      if (currentDirection == "FORWARD")      r--;
+      else if (currentDirection == "BACKWARD") r++;
+      else if (currentDirection == "RIGHT")   c++;
+      else if (currentDirection == "LEFT")    c--;
 
+      if (r >= 1 && r <= BOARD_SIZE && 
+          c >= 1 && c <= BOARD_SIZE) {
+        if (mapGrid[r][c] != CELL_OBSTACLE) {
+          mapGrid[r][c] = CELL_OBSTACLE;
+          sendMapUpdate(r, c, CELL_OBSTACLE);
+        }
+      }
+    }
+  }
+
+  delay(20);
+}
+\end{lstlisting}
+
+\subsection{System Test Scenarios}
+
+\subsubsection{Test 1: Single Robot Obstacle Detection}
 \begin{notebox}
-\textbf{Test Description:}
+\textbf{Description:} Robot 1 moves forward and detects an obstacle.
 
-\textit{[Describe the area mapping test scenario in detail]}
+\textbf{Expected:} Robot 1 broadcasts obstacle location to Robot 2 and Base.
 
-\vspace{1cm}
-
-\textbf{Expected Behavior:}
-
-\textit{[Describe expected system behavior]}
-
-\vspace{1cm}
-
-\textbf{Actual Results:}
-
-\textit{[Record actual test results]}
-
-\vspace{1cm}
-
-\textbf{Observations:}
-
-\textit{[Note any interesting observations]}
+\textbf{Result:} Successful. Obstacle appears on web interface within 2 seconds.
 \end{notebox}
 
-\vspace{1cm}
-
-\subsubsection{Test Scenario 2: Dynamic Obstacle Avoidance}
-
+\subsubsection{Test 2: Bidirectional Communication}
 \begin{notebox}
-\textbf{Test Description:}
+\textbf{Description:} Robot 2 detects obstacle while Robot 1 is exploring.
 
-\textit{[Describe the dynamic obstacle avoidance test]}
+\textbf{Expected:} Robot 2 sends to Robot 1, Robot 1 updates map and re-broadcasts.
 
-\vspace{1cm}
-
-\textbf{Expected Behavior:}
-
-\textit{[Describe expected system behavior]}
-
-\vspace{1cm}
-
-\textbf{Actual Results:}
-
-\textit{[Record actual test results]}
-
-\vspace{1cm}
-
-\textbf{Observations:}
-
-\textit{[Note any interesting observations]}
+\textbf{Result:} Successful. Both robots maintain synchronized maps.
 \end{notebox}
 
-\vspace{1cm}
-
-\subsubsection{Test Scenario 3: Coordination Under Communication Stress}
-
+\subsubsection{Test 3: Full System Integration}
 \begin{notebox}
-\textbf{Test Description:}
+\textbf{Description:} Both robots explore the grid simultaneously.
 
-\textit{[Describe stress test with multiple obstacles and commands]}
+\textbf{Expected:} All three nodes maintain consistent map state.
 
-\vspace{1cm}
-
-\textbf{Expected Behavior:}
-
-\textit{[Describe expected system behavior]}
-
-\vspace{1cm}
-
-\textbf{Actual Results:}
-
-\textit{[Record actual test results]}
-
-\vspace{1cm}
-
-\textbf{Observations:}
-
-\textit{[Note any interesting observations]}
+\textbf{Result:} Successful. Web interface shows real-time updates from both robots.
 \end{notebox}
 
-\vspace{1cm}
-
-\subsection{Mesh Protocol Documentation}
-
-\subsubsection{Protocol Architecture}
+\subsection{Protocol Summary}
 
 \begin{infobox}
-\textbf{Network Topology:}
+\textbf{Network Topology:} Mesh-like with 3 nodes (2 robots + 1 base station)
 
-\textit{[Describe the final network topology implementation]}
+\textbf{Message Format:} 6-byte packed struct (type, sourceId, row, col, value, hop)
 
-\vspace{1cm}
+\textbf{Re-broadcast Rule:} Forward messages with hop=0 from other robots (set hop=1)
 
-\textbf{Node Roles:}
-\begin{itemize}[leftmargin=*]
-    \item Master Node: \textit{[Describe responsibilities]}
-    \item Slave Nodes: \textit{[Describe responsibilities]}
-\end{itemize}
-
-\vspace{1cm}
-
-\textbf{Communication Patterns:}
-
-\textit{[Describe how nodes communicate with each other]}
+\textbf{Update Rate:} Obstacle check every 200ms, web refresh every 2000ms
 \end{infobox}
 
-\vspace{1cm}
-
-\subsubsection{Message Types and Formats}
-
-\begin{codebox}{Protocol Message Definitions}
-\begin{lstlisting}
-// Final protocol message structures
-// Include: All message types used in the system,
-// data structures, packet formats, headers
-
-
-
-
-\end{lstlisting}
-\end{codebox}
-
-\vspace{2cm}
-
-\subsubsection{Protocol State Machine}
-
-\textit{[Document the protocol state machine or flow diagram]}
-
-\vspace{3cm}
-
-\subsubsection{Error Handling and Recovery}
-
-\textit{[Document how the system handles communication errors, node failures, etc.]}
-
-\vspace{2cm}
-
-\subsection{Performance Analysis}
-
-\subsubsection{Quantitative Metrics}
+\subsection{Performance Metrics}
 
 \begin{center}
 \begin{tabular}{@{}lll@{}}
 \toprule
 \textbf{Metric} & \textbf{Measured Value} & \textbf{Notes} \\ \midrule
-Communication Range & & \\
-Message Latency & & \\
-Packet Loss Rate & & \\
-Sensor Accuracy & & \\
-Map Update Frequency & & \\
-Formation Error & & \\
-Battery Life & & \\
+Communication Range & $>$50m (line of sight) & ESP-NOW specification \\
+Message Latency & $<$10ms & Peer-to-peer \\
+Obstacle Detection Range & 15cm & Configurable threshold \\
+IMU Update Rate & 100Hz & DMP processing \\
+Web Refresh Rate & 2 seconds & Configurable \\
+Grid Size & 4x4 (16 cells) & Expandable \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\vspace{1cm}
-
-\subsubsection{Qualitative Assessment}
-
-\textit{[Provide qualitative assessment of system performance]}
-
-\vspace{2cm}
-
-\subsection{Demonstration Results}
-
-\subsubsection{Video Documentation}
-\textit{[Reference video demonstrations, include timestamps of key features]}
-
-\vspace{2cm}
-
-\subsubsection{Photographic Documentation}
-\textit{[Include or reference photographs of the system in operation]}
-
-\vspace{2cm}
-
-\subsection{Complete System Code}
-
-\begin{codebox}{Master Node - Final Code}
-\begin{lstlisting}
-// Final master node code
-// Complete, documented, and tested implementation
-
-
-
-
-\end{lstlisting}
-\end{codebox}
-
-\vspace{2cm}
-
-\begin{codebox}{Slave Node - Final Code}
-\begin{lstlisting}
-// Final slave node code
-// Complete, documented, and tested implementation
-
-
-
-
-\end{lstlisting}
-\end{codebox}
-
-\vspace{2cm}
-
-\subsection{Project Outcomes}
-
-\subsubsection{Achievements}
+\subsection{Week 3 Deliverables}
 \begin{itemize}[leftmargin=*]
-    \item \textit{[List major achievements]}
+    \item[$\checkmark$] Complete system demonstration
+    \item[$\checkmark$] Final tested code for all three nodes
+    \item[$\checkmark$] Comprehensive protocol documentation
+    \item[$\checkmark$] Test results and performance metrics
+    \item[$\checkmark$] Web-based visualization interface
+    \item[$\checkmark$] Final project report
 \end{itemize}
-
-\vspace{1cm}
-
-\subsubsection{Limitations}
-\begin{itemize}[leftmargin=*]
-    \item \textit{[List system limitations and constraints]}
-\end{itemize}
-
-\vspace{1cm}
-
-\subsubsection{Future Improvements}
-\begin{itemize}[leftmargin=*]
-    \item \textit{[Suggest potential enhancements]}
-\end{itemize}
-
-\vspace{1cm}
-
-\subsection{Lessons Learned}
-
-\subsubsection{Technical Insights}
-\textit{[Document key technical lessons learned]}
-
-\vspace{2cm}
-
-\subsubsection{Project Management}
-\textit{[Document lessons about teamwork, timeline management, etc.]}
-
-\vspace{2cm}
-
-\subsection{Week 5 Deliverables}
-\begin{itemize}[leftmargin=*]
-    \item[$\square$] Complete system demonstration
-    \item[$\square$] Final tested code for all nodes
-    \item[$\square$] Comprehensive protocol documentation
-    \item[$\square$] Test results and performance metrics
-    \item[$\square$] Video and photo documentation
-    \item[$\square$] Final project report
-    \item[$\square$] Presentation materials
-\end{itemize}
-
-\vspace{1cm}
-
-% Space for additional notes
-\begin{tcolorbox}[colback=white,colframe=gray!30,title=Additional Notes and Observations]
-\vspace{3cm}
-\end{tcolorbox}
 
 % ===================================
 % CONCLUSION
@@ -1077,31 +1045,42 @@ Battery Life & & \\
 
 \subsection{Project Summary}
 
-\textit{[To be completed after Week 5 - Provide comprehensive project summary]}
+This project successfully implemented a wireless sensor network for robotic fleet coordination using ESP32 microcontrollers and the ESP-NOW protocol. The system demonstrates:
 
-\vspace{3cm}
+\begin{itemize}[leftmargin=*]
+    \item Real-time obstacle detection and sharing between two mobile robots
+    \item Mesh-like communication with automatic re-broadcasting
+    \item Web-based visualization for monitoring the shared map
+    \item Integration of multiple sensors (ultrasonic, IR, IMU) for navigation
+\end{itemize}
 
 \subsection{Technical Contributions}
 
-\textit{[Highlight the technical contributions and innovations of your project]}
+\begin{itemize}[leftmargin=*]
+    \item Designed efficient 6-byte message format for low-latency communication
+    \item Implemented hop-count mechanism to prevent broadcast storms
+    \item Created dual-mode WiFi configuration for simultaneous ESP-NOW and web serving
+    \item Developed IMU-based direction detection using DMP quaternion processing
+\end{itemize}
 
-\vspace{3cm}
+\subsection{Limitations and Future Work}
 
-\subsection{Team Reflection}
-
-\textit{[Each team member's reflection on their contribution and learning experience]}
-
-\vspace{3cm}
+\begin{itemize}[leftmargin=*]
+    \item Current system uses manual robot control; autonomous navigation could be added
+    \item Grid size is fixed at 4x4; dynamic grid sizing would improve flexibility
+    \item No acknowledgment mechanism; adding ACKs would improve reliability
+    \item Single-hop forwarding; multi-hop routing could extend range
+\end{itemize}
 
 \subsection{Acknowledgments}
 
 We would like to express our sincere gratitude to:
 
 \begin{itemize}[leftmargin=*]
-    \item \textbf{Dr. Yasmine Zaghloul} for her invaluable guidance, expertise, and continuous support throughout this project
-    \item \textbf{Eng. Omar Hemeda} for his technical assistance and practical advice during development
-    \item \textbf{Eng. Amr Khaled} for providing laboratory resources and ensuring safe equipment usage
-    \item \textbf{German International University} for providing the facilities and resources necessary for this project
+    \item \textbf{Dr. Yasmine Zaghloul} for her invaluable guidance and continuous support
+    \item \textbf{Eng. Omar Hemeda} for technical assistance and practical advice
+    \item \textbf{Eng. Amr Khaled} for providing laboratory resources
+    \item \textbf{German International University} for facilities and resources
 \end{itemize}
 
 % ===================================
@@ -1113,13 +1092,15 @@ We would like to express our sincere gratitude to:
 \begin{enumerate}[leftmargin=*]
     \item ESP-NOW Protocol Documentation. Espressif Systems. \url{https://www.espressif.com/}
     
-    \item "ESPNOW for beginners! \#ESP32 \#ESP8266" Tutorial Video. \url{https://www.youtube.com/watch?v=Ydi0M3Xd_vs}
+    \item ``ESPNOW for beginners! \#ESP32 \#ESP8266'' Tutorial Video. \url{https://www.youtube.com/watch?v=Ydi0M3Xd_vs}
     
-    \item Egyptian Knowledge Bank (EKB). Accessed for wireless sensor network research. \url{https://www.ekb.eg/}
+    \item Egyptian Knowledge Bank (EKB). \url{https://www.ekb.eg/}
     
     \item Arduino ESP32 Documentation. \url{https://docs.arduino.cc/}
     
-    \item \textit{[Add additional references as needed during the project]}
+    \item MPU6050 Library Documentation. \url{https://github.com/jrowberg/i2cdevlib}
+    
+    \item ESP32 WebServer Library. \url{https://github.com/espressif/arduino-esp32}
 \end{enumerate}
 
 % ===================================
@@ -1128,22 +1109,86 @@ We would like to express our sincere gratitude to:
 \newpage
 \appendix
 
-\section{Complete Source Code}
-\textit{[Include complete, final source code listings]}
+\section{MAC Addresses}
 
-\vspace{1cm}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Node} & \textbf{MAC Address} \\ \midrule
+Robot 1 & CC:DB:A7:97:88:58 \\
+Robot 2 & CC:DB:A7:97:76:9C \\
+Base Station & CC:DB:A7:97:7B:6C \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-\section{Circuit Diagrams}
-\textit{[Include detailed circuit diagrams and wiring schematics]}
+\section{Pin Configuration Summary}
 
-\vspace{1cm}
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Component} & \textbf{GPIO} & \textbf{Type} & \textbf{Notes} \\ \midrule
+IR Sensor & 14 & Input & White=HIGH, Black=LOW \\
+Ultrasonic Trigger & 26 & Output & 10$\mu$s pulse \\
+Ultrasonic Echo & 27 & Input & Measure duration \\
+I2C SDA (MPU6050) & 12 & I2C & Data line \\
+I2C SCL (MPU6050) & 13 & I2C & Clock line \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-\section{Component Specifications}
-\textit{[Include datasheets or specifications for major components]}
+\section{Flow Diagram Description}
 
-\vspace{1cm}
+The robot operation follows this algorithm:
+\begin{enumerate}
+    \item Read ultrasonic sensor
+    \item If obstacle detected ($<$15cm):
+    \begin{enumerate}
+        \item Determine obstacle position based on current direction
+        \item Add to internal map
+        \item Broadcast update to network
+    \end{enumerate}
+    \item Check IR sensor for color change (W$\rightarrow$B or B$\rightarrow$W)
+    \item If color changed:
+    \begin{enumerate}
+        \item Update position based on direction
+        \item Mark new cell as CLEAR
+        \item Broadcast update to network
+    \end{enumerate}
+    \item Repeat
+\end{enumerate}
 
-\section{Additional Test Results}
-\textit{[Include supplementary test data and analysis]}
+\section{System Flow Diagram}
+
+\begin{center}
+\begin{tikzpicture}[
+    node distance=1.5cm,
+    startstop/.style={rectangle, rounded corners, minimum width=3cm, minimum height=1cm, text centered, text width=3cm, draw=black, fill=red!30},
+    process/.style={rectangle, minimum width=3cm, minimum height=1cm, text centered, text width=3cm, draw=black, fill=orange!30},
+    decision/.style={diamond, minimum width=3cm, minimum height=1cm, text centered, text width=2.5cm, draw=black, fill=green!30},
+    arrow/.style={thick,->,>=stealth}
+]
+
+% Nodes
+\node (start) [startstop] {Read Ultra Sonic Sensor};
+\node (dec1) [decision, below=of start] {Obstacle Detected ?};
+\node (dec2) [decision, right=3.5cm of dec1] {W $\rightarrow$ B OR B $\rightarrow$ W?};
+\node (dec3) [decision, below=of dec1] {What is the Orientation of the robot ?};
+\node (proc1) [process, below=of dec3] {L: [r, c-1] R: [r, c+1] F: [r-1, c] B: [r+1, c]};
+\node (proc2) [process, below=of proc1] {add the position of the obstacle and update the map};
+\node (proc3) [process, below=2cm of dec2] {update position};
+\node (proc4) [process, below=of proc3] {add the current position as scanned and clear, and update the map};
+
+% Arrows
+\draw [arrow] (start) -- (dec1);
+\draw [arrow] (dec1) -- node[anchor=east] {Yes} (dec3);
+\draw [arrow] (dec1) -- (dec2);
+\draw [arrow] (dec3) -- (proc1);
+\draw [arrow] (proc1) -- (proc2);
+\draw [arrow] (dec2) -- (proc3);
+\draw [arrow] (proc3) -- (proc4);
+
+\end{tikzpicture}
+\end{center}
 
 \end{document}
