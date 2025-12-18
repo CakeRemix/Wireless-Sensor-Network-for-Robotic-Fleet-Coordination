@@ -1,185 +1,163 @@
-// ================= ROBOT 1 NODE =================
+/****************************************************
+   ROBOT 1 (ID = 1)
+
+   - Position is in CELL coordinates (1..4, 1..4)
+     (col, row)  => (xCell, yCell)
+   - Robot 1 starts at (4,1)
+   - IR is ACTIVE LOW:
+        0 = WHITE  block
+        1 = BLACK  block
+   - IMU gives direction:
+        0 = UP, 1 = RIGHT, 2 = DOWN, 3 = LEFT
+   - grid[4][4] stores black/white pattern:
+        0 = WHITE, 1 = BLACK
+   - On IR change -> robot moved to next cell
+   - Ultrasonic detects obstacle in front
+   - Sends to Base (TCP):
+        POS,x,y,1,dirCode
+        OBS,ox,oy,1
+****************************************************/
+
 #include <WiFi.h>
-#include <esp_now.h>
-#include <esp_wifi.h>
 #include <Wire.h>
 #include <MPU6050_6Axis_MotionApps20.h>
-#include <math.h>
 
-// ------------ IDs & MACs -------------
+#define RAD_TO_DEG 57.2957795f
+
+// ====== WiFi Settings ======
+const char* ssid     = "RobotNet";       // Base ESP AP name
+const char* password = "12345678";       // Base ESP AP password
+const char* host     = "192.168.4.1";    // Base ESP IP
+const int   port     = 3333;             // TCP port
+
+WiFiClient client;
+
 #define ROBOT_ID 1
 
-uint8_t BASE_MAC[]   = {0xCC, 0xDB, 0xA7, 0x97, 0x7B, 0x6C};
-uint8_t OTHER_ROBOT_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x76, 0x9C}; // Robot 2
+// ====== GRID (4x4) 0=WHITE, 1=BLACK ======
+// Coordinates are (x=1..4, y=1..4)
+// We store as grid[y-1][x-1]
+int grid[4][4] = {
+  // x: 1  2  3  4
+  {0, 1, 0, 1},   // y=1 : W B W B
+  {1, 0, 1, 0},   // y=2 : B W B W
+  {0, 1, 0, 1},   // y=3 : W B W B
+  {1, 0, 1, 0}    // y=4 : B W B W
+};
 
-// ------------ Pins (All on D13 side) -------------
-#define IR_PIN      14          // IR sensor (white/black)
-#define TRIG_PIN   26          // ultrasonic trig
-#define ECHO_PIN   27          // ultrasonic echo
-// IMU uses I2C: SDA=12, SCL=13
+// ====== Robot cell position (1..4, 1..4) ======
+int xCell = 1;    // starting column  1
+int yCell = 4;    // starting row     4
 
-// ------------ Board & Map -------------
-#define BOARD_SIZE 4
+// ====== Pins (change to your wiring) ======
+const int IR_PIN   = 14;   // digital input from IR (active low)
+const int TRIG_PIN = 26;    // ultrasonic trigger
+const int ECHO_PIN = 27;   // ultrasonic echo
 
-#define MSG_TYPE_MAP_UPDATE  1
-
-#define CELL_UNKNOWN   0
-#define CELL_CLEAR     1
-#define CELL_OBSTACLE  2
-
-typedef struct __attribute__((packed)) {
-  uint8_t type;
-  uint8_t sourceId;
-  uint8_t row;
-  uint8_t col;
-  uint8_t value;
-  uint8_t hop;
-} MapMessage;
-
-int8_t mapGrid[BOARD_SIZE + 1][BOARD_SIZE + 1];  // 1..4 used
-int currentRow = 4;   // Robot1 starts at (4,1)
-int currentCol = 1;
-
-// For IR movement detection
-bool lastIRKnown = false;
-bool lastIsWhite = false;
-
-// Ultrasonic timing
-const float OBSTACLE_DISTANCE_CM = 15.0;
-unsigned long lastSonarMs = 0;
-const unsigned long SONAR_INTERVAL_MS = 200;
-
-// ------------ IMU (your code) -------------
+// ====== IMU Object ======
 MPU6050 mpu;
-
 bool dmpReady = false;
 uint8_t fifoBuffer[64];
 Quaternion q;
 VectorFloat gravity;
 float ypr[3];
 
-// Robot direction (relative, not compass)
-String currentDirection = "FORWARD";
-const float ROTATION_THRESHOLD = 70.0;
+String currentDir = "FORWARD";  // FORWARD / RIGHT / BACKWARD / LEFT
+int currentDirCode = 0;         // 0=UP,1=RIGHT,2=DOWN,3=LEFT
+int lastSentDirCode = -1; 
 
-// Map yaw → direction
+// IR state
+int lastIRState = 1;            // will set correctly in setup()
+
+// ===== Map yaw → text direction =====
 String getDirection(float yaw) {
   if (yaw < 45 || yaw >= 315) return "FORWARD";
   if (yaw >= 45 && yaw < 135) return "RIGHT";
   if (yaw >= 135 && yaw < 225) return "BACKWARD";
-  return "LEFT";  // 225–315
+  return "LEFT";
 }
 
-// Map direction → center angle
-float directionAngle(String dir) {
-  if (dir == "FORWARD") return 0;
-  if (dir == "RIGHT") return 90;
-  if (dir == "BACKWARD") return 180;
-  if (dir == "LEFT") return 270;
+// ===== Map text direction → numeric code =====
+int directionToCode(String d) {
+  if (d == "FORWARD")  return 0; // UP
+  if (d == "RIGHT")    return 1; // RIGHT
+  if (d == "BACKWARD") return 2; // DOWN
+  if (d == "LEFT")     return 3; // LEFT
   return 0;
 }
 
-// ---- This is exactly your IMU loop body, wrapped in a function ----
-void updateIMU() {
-  if (!dmpReady) return;
+// ===== WiFi connection checker (debug) =====
+void checkWiFiStatus() {
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("WiFi Status: CONNECTED");
+  } else {
+    Serial.println("WiFi Status: NOT CONNECTED — Reconnecting...");
+    WiFi.begin(ssid, password);
+  }
+}
 
-  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-
-    mpu.dmpGetQuaternion(&q, fifoBuffer);
-    mpu.dmpGetGravity(&gravity, &q);
-    mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-
-    float yaw = ypr[0] * 180 / M_PI;
-    if (yaw < 0) yaw += 360;
-
-    // direction from yaw
-    String newDir = getDirection(yaw);
-
-    // angle difference
-    float diff = fabs(yaw - directionAngle(currentDirection));
-    if (diff > 180) diff = 360 - diff;
-
-    // change only after large rotation
-    if (newDir != currentDirection && diff >= ROTATION_THRESHOLD) {
-      currentDirection = newDir;
-      Serial.print("Direction: ");
-      Serial.println(currentDirection);  // PRINT THE NEW DIRECTION
+// ===== Ensure WiFi + TCP connection =====
+void ensureConnected() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi disconnected — reconnecting...");
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(300);
+      Serial.print(".");
     }
+    Serial.println("\nWiFi connected");
+  }
+
+  if (!client.connected()) {
+    Serial.println("Reconnecting to Base...");
+    while (!client.connect(host, port)) {
+      Serial.println("Waiting for Base...");
+      delay(1000);
+    }
+    Serial.println("TCP Connected to Base");
   }
 }
 
-// ------------ ESP-NOW callbacks -------------
-void onSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
-  // Optional debug
-  // Serial.println(status == ESP_NOW_SEND_SUCCESS ? "ESP-NOW send OK" : "ESP-NOW send fail");
+// ===== Send Position to Base (in cell coords 1..4) =====
+void sendPosition() {
+  ensureConnected();
+  String msg = "POS," + String(xCell) + "," + String(yCell) + "," +
+               String(ROBOT_ID) + "," + String(currentDirCode) + "\n";
+  client.print(msg);
+  Serial.println("Sent: " + msg);
 }
 
-void forwardMapMessage(const MapMessage &msg);
-
-void onReceive(const esp_now_recv_info *info, const uint8_t *data, int len) {
-  if (len != sizeof(MapMessage)) {
-    return;
-  }
-  MapMessage msg;
-  memcpy(&msg, data, sizeof(msg));
-
-  if (msg.type != MSG_TYPE_MAP_UPDATE) return;
-  if (msg.row < 1 || msg.row > BOARD_SIZE ||
-      msg.col < 1 || msg.col > BOARD_SIZE) return;
-
-  // Update local map
-  mapGrid[msg.row][msg.col] = msg.value;
-
-  Serial.print("[Robot1] Map update from Robot ");
-  Serial.print(msg.sourceId);
-  Serial.print(" -> cell(");
-  Serial.print(msg.row);
-  Serial.print(",");
-  Serial.print(msg.col);
-  Serial.print(") = ");
-  Serial.println(msg.value == CELL_OBSTACLE ? "OBSTACLE" : "CLEAR");
-
-  // Forward only once, and never forward our own original messages
-  if (msg.hop == 0 && msg.sourceId != ROBOT_ID) {
-    forwardMapMessage(msg);
-  }
+// ===== Send Obstacle to Base =====
+void sendObstacle(int ox, int oy) {
+  ensureConnected();
+  String msg = "OBS," + String(ox) + "," + String(oy) + "," +
+               String(ROBOT_ID) + "\n";
+  client.print(msg);
+  Serial.println("Sent: " + msg);
 }
 
-// ------------ ESP-NOW send helpers -------------
-void sendMapUpdate(uint8_t row, uint8_t col, uint8_t value) {
-  MapMessage msg;
-  msg.type     = MSG_TYPE_MAP_UPDATE;
-  msg.sourceId = ROBOT_ID;
-  msg.row      = row;
-  msg.col      = col;
-  msg.value    = value;
-  msg.hop      = 0;   // original info
+// ===== Read IMU + Update currentDirCode =====
+void updateIMUDirection() {
+  if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) return;
 
-  // Send to BOTH base station and other robot
-  esp_now_send(BASE_MAC, (uint8_t*)&msg, sizeof(msg));
-  esp_now_send(OTHER_ROBOT_MAC, (uint8_t*)&msg, sizeof(msg));
-  
-  Serial.print("[Robot");
-  Serial.print(ROBOT_ID);
-  Serial.print("] Sent update: (");
-  Serial.print(row);
-  Serial.print(",");
-  Serial.print(col);
-  Serial.print(") = ");
-  Serial.println(value);
+  mpu.dmpGetQuaternion(&q, fifoBuffer);
+  mpu.dmpGetGravity(&gravity, &q);
+  mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+
+  float yaw = ypr[0] * RAD_TO_DEG;
+  if (yaw < 0) yaw += 360;
+
+  String newDir = getDirection(yaw);
+  currentDir    = newDir;
+  currentDirCode = directionToCode(newDir);
+
+  Serial.print("Yaw: "); Serial.print(yaw);
+  Serial.print("  Dir: "); Serial.print(currentDir);
+  Serial.print("  Code: "); Serial.println(currentDirCode);
 }
 
-void forwardMapMessage(const MapMessage &msgIn) {
-  MapMessage out = msgIn;
-  out.hop = 1; // forwarded once
-
-  // Rebroadcast to other robot and to base
-  esp_now_send(OTHER_ROBOT_MAC, (uint8_t*)&out, sizeof(out));
-  esp_now_send(BASE_MAC,        (uint8_t*)&out, sizeof(out));
-}
-
-// ------------ Ultrasonic -------------
-float readUltrasonicCm() {
+// ===== Measure distance with ultrasonic (cm) =====
+float getDistanceCm() {
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
@@ -187,147 +165,132 @@ float readUltrasonicCm() {
   digitalWrite(TRIG_PIN, LOW);
 
   long duration = pulseIn(ECHO_PIN, HIGH, 30000); // timeout 30ms
-  if (duration == 0) return -1;                   // no echo
-  float distance = duration * 0.0343 / 2.0;       // speed of sound
+  if (duration == 0) return 9999; // no echo
+
+  float distance = duration * 0.0343f / 2.0f;
   return distance;
 }
 
-// ------------ Position helpers -------------
-void updatePositionFromDirection() {
-  int newRow = currentRow;
-  int newCol = currentCol;
+// ===== Check for obstacle in front and send OBS,ox,oy =====
+void checkObstacle() {
+  float d = getDistanceCm();
+  Serial.print("Distance: ");
+  Serial.println(d);
 
-  if (currentDirection == "FORWARD")      newRow--;
-  else if (currentDirection == "BACKWARD") newRow++;
-  else if (currentDirection == "RIGHT")   newCol++;
-  else if (currentDirection == "LEFT")    newCol--;
+  if (d < 15.0f) { // obstacle closer than 15 cm
+    int ox = xCell;
+    int oy = yCell;
 
-  // Keep inside 4x4 board
-  if (newRow < 1 || newRow > BOARD_SIZE || newCol < 1 || newCol > BOARD_SIZE) {
-    Serial.println("[Robot1] Move would leave board, ignored");
-    return;
-  }
+    if (currentDirCode == 0) oy -= 1; // UP
+    else if (currentDirCode == 1) ox += 1; // RIGHT
+    else if (currentDirCode == 2) oy += 1; // DOWN
+    else if (currentDirCode == 3) ox -= 1; // LEFT
 
-  currentRow = newRow;
-  currentCol = newCol;
-
-  if (mapGrid[currentRow][currentCol] != CELL_CLEAR) {
-    mapGrid[currentRow][currentCol] = CELL_CLEAR;
-    Serial.print("[Robot1] Moved to cell (");
-    Serial.print(currentRow); Serial.print(",");
-    Serial.print(currentCol); Serial.println(") CLEAR");
-    sendMapUpdate(currentRow, currentCol, CELL_CLEAR);
+    // inside grid 1..4
+    if (ox >= 1 && ox <= 4 && oy >= 1 && oy <= 4) {
+      sendObstacle(ox, oy);
+    } else {
+      Serial.println("Obstacle cell outside grid – ignored");
+    }
   }
 }
 
-// ------------ Setup & Loop -------------
+// ===== Update grid position when IR changes (moved one block) =====
+void updatePositionFromIR() {
+  int irNow = digitalRead(IR_PIN);  // 0 = white, 1 = black (active low)
+
+  if (irNow != lastIRState) {
+    // IR changed → robot crossed into a new block
+    Serial.print("IR changed: ");
+    Serial.print(lastIRState);
+    Serial.print(" -> ");
+    Serial.println(irNow);
+
+    int newX = xCell;
+    int newY = yCell;
+
+    if (currentDirCode == 0) newY -= 1;   // UP
+    else if (currentDirCode == 1) newX += 1; // RIGHT
+    else if (currentDirCode == 2) newY += 1; // DOWN
+    else if (currentDirCode == 3) newX -= 1; // LEFT
+
+    // Check inside grid
+    if (newX >= 1 && newX <= 4 && newY >= 1 && newY <= 4) {
+      xCell = newX;
+      yCell = newY;
+
+      int gridColor = grid[yCell - 1][xCell - 1]; // 0:white,1:black
+
+      Serial.print("New cell: (");
+      Serial.print(xCell);
+      Serial.print(",");
+      Serial.print(yCell);
+      Serial.print(")  Color: ");
+      Serial.println(gridColor == 0 ? "WHITE" : "BLACK");
+
+      sendPosition();   // inform Base about new position
+    } else {
+      Serial.println("Move ignored: would leave the 4x4 grid");
+    }
+  }
+
+  lastIRState = irNow;
+}
+
 void setup() {
   Serial.begin(115200);
 
-  // Pins
-  pinMode(IR_PIN, INPUT);
+    // Start WiFi
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi...");
+  delay(2000);
+
+  Wire.begin(32, 33);
+
+  pinMode(IR_PIN,   INPUT);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
 
-  // Init map
-  for (int r = 1; r <= BOARD_SIZE; r++)
-    for (int c = 1; c <= BOARD_SIZE; c++)
-      mapGrid[r][c] = CELL_UNKNOWN;
+  // Read initial IR state at starting cell (4,1)
+  lastIRState = digitalRead(IR_PIN);
+  Serial.print("Initial IR state: ");
+  Serial.println(lastIRState);
 
-  mapGrid[currentRow][currentCol] = CELL_CLEAR;
-
-  // ---- IMU init (your setup code) ----
-  Wire.begin(12, 13);  // SDA=12, SCL=13
-  delay(1000);
-
+  // ==== INIT IMU ====
   mpu.initialize();
-  if (!mpu.testConnection()) {
-    Serial.println("MPU6050 NOT CONNECTED!");
-    while (1);
-  }
-
   uint16_t status = mpu.dmpInitialize();
+
   if (status == 0) {
     mpu.CalibrateAccel(6);
     mpu.CalibrateGyro(6);
     mpu.setDMPEnabled(true);
     dmpReady = true;
-    delay(2000);
+    Serial.println("IMU READY");
   } else {
-    Serial.println("DMP init failed!");
-    while (1);
+    Serial.println("IMU INIT FAILED!");
+    while (1);  // stop here
   }
 
-  Serial.println("FORWARD");  // Initial direction
-
-  // ---- ESP-NOW init ----
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("ESP-NOW init failed");
-    while (1);
-  }
-
-  esp_now_register_send_cb(onSent);
-  esp_now_register_recv_cb(onReceive);
-
-  // Add peers: other robot + base
-  esp_now_peer_info_t peer{};
-  memcpy(peer.peer_addr, OTHER_ROBOT_MAC, 6);
-  peer.channel = 0;
-  peer.encrypt = false;
-  esp_now_add_peer(&peer);
-
-  memcpy(peer.peer_addr, BASE_MAC, 6);
-  peer.channel = 0;
-  peer.encrypt = false;
-  esp_now_add_peer(&peer);
-
-  Serial.println("[Robot1] Ready");
+  // Send initial position
+  sendPosition();
+  lastSentDirCode = currentDirCode;
 }
 
 void loop() {
-  // 1) Update orientation from IMU
-  updateIMU();
+  if (!dmpReady) return;
 
-  // 2) Detect motion by IR color changes (W <-> B)
-  bool isWhite = digitalRead(IR_PIN);   // adjust if logic inverted
-  if (!lastIRKnown) {
-    lastIsWhite = isWhite;
-    lastIRKnown = true;
-  } else if (isWhite != lastIsWhite) {
-    // crossed into next square
-    lastIsWhite = isWhite;
-    updatePositionFromDirection();
-  }
+ checkWiFiStatus();
+ updateIMUDirection();
 
-  // 3) Periodically check ultrasonic for obstacle
-  unsigned long now = millis();
-  if (now - lastSonarMs >= SONAR_INTERVAL_MS) {
-    lastSonarMs = now;
-    float dist = readUltrasonicCm();
-    if (dist > 0 && dist < OBSTACLE_DISTANCE_CM) {
-      // obstacle in front of robot (one cell ahead)
-      int r = currentRow;
-      int c = currentCol;
+// ✅ if direction changed, send POS even if robot didn't move
+if (currentDirCode != lastSentDirCode) {
+  sendPosition();
+  lastSentDirCode = currentDirCode;
+}
 
-      if (currentDirection == "FORWARD")      r--;
-      else if (currentDirection == "BACKWARD") r++;
-      else if (currentDirection == "RIGHT")   c++;
-      else if (currentDirection == "LEFT")    c--;
+updatePositionFromIR();
+checkObstacle();
 
-      if (r >= 1 && r <= BOARD_SIZE && c >= 1 && c <= BOARD_SIZE) {
-        if (mapGrid[r][c] != CELL_OBSTACLE) {
-          mapGrid[r][c] = CELL_OBSTACLE;
-          Serial.print("[Robot1] Obstacle at (");
-          Serial.print(r); Serial.print(",");
-          Serial.print(c); Serial.println(")");
-          sendMapUpdate(r, c, CELL_OBSTACLE);
-        }
-      }
-    }
-  }
+delay(200);
 
-  delay(20);
 }
