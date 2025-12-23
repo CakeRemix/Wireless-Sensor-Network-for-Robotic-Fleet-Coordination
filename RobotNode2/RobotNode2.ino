@@ -1,20 +1,24 @@
 /****************************************************
-   ROBOT 2 (ID = 2)
+   ROBOT 1 (ID = 1)
 
    - Position is in CELL coordinates (1..4, 1..4)
-   - Robot 2 starts at (4,4)
-   - IR is ACTIVE LOW:
-        0 = WHITE block
-        1 = BLACK block
+     (col, row)  => (xCell, yCell)
+   - Robot 1 starts at (1,4)
+   - IR FLOOR is ACTIVE LOW:
+        0 = WHITE  block
+        1 = BLACK  block
+   - IR FRONT is ACTIVE LOW (obstacle sensor):
+        0 = OBSTACLE detected
+        1 = NO obstacle
    - IMU gives direction:
         0 = UP, 1 = RIGHT, 2 = DOWN, 3 = LEFT
    - grid[4][4] stores black/white pattern:
         0 = WHITE, 1 = BLACK
-   - On IR change -> robot moved one block
-   - Ultrasonic detects obstacle in front
+   - On FLOOR IR change -> robot moved to next cell
+   - FRONT IR detects obstacle in front
    - Sends to Base (TCP):
-        POS,x,y,2,dirCode
-        OBS,ox,oy,2
+        POS,x,y,1,dirCode
+        OBS,ox,oy,1
 ****************************************************/
 
 #include <WiFi.h>
@@ -24,10 +28,10 @@
 #define RAD_TO_DEG 57.2957795f
 
 // ====== WiFi Settings ======
-const char* ssid     = "RobotNet";     
-const char* password = "12345678";     
-const char* host     = "192.168.4.1";  
-const int   port     = 3333;          
+const char* ssid     = "RobotNet";
+const char* password = "12345678";
+const char* host     = "192.168.4.1";
+const int   port     = 3333;
 
 WiFiClient client;
 
@@ -35,19 +39,19 @@ WiFiClient client;
 
 // ====== GRID (4x4) 0=WHITE, 1=BLACK ======
 int grid[4][4] = {
-  {0, 1, 0, 1},  
-  {1, 0, 1, 0},  
-  {0, 1, 0, 1},  
-  {1, 0, 1, 0}   
+  {0, 1, 0, 1},
+  {1, 0, 1, 0},
+  {0, 1, 0, 1},
+  {1, 0, 1, 0}
 };
 
-// ====== Robot Start Position ======
-int xCell = 4;    // starting column
-int yCell = 4;    // starting row
+// ====== Robot cell position (1..4, 1..4) ======
+int xCell = 4;    // starting column  1
+int yCell = 4;    // starting row     4
 
-const int IR_PIN   = 14;   // digital input from IR (active low)
-const int TRIG_PIN = 26;    // ultrasonic trigger
-const int ECHO_PIN = 27;   // ultrasonic echo
+// ====== IR Pins ======
+const int IR_FLOOR_PIN = 14;   // floor IR (movement)  ACTIVE LOW
+const int IR_FRONT_PIN = 25;   // front IR (obstacle)  ACTIVE LOW
 
 // ====== IMU Object ======
 MPU6050 mpu;
@@ -57,11 +61,15 @@ Quaternion q;
 VectorFloat gravity;
 float ypr[3];
 
-String currentDir = "FORWARD";  
-int currentDirCode = 0;   
-int lastSentDirCode = -1;       
+String currentDir = "FORWARD";
+int currentDirCode = 0;         // 0=UP,1=RIGHT,2=DOWN,3=LEFT
+int lastSentDirCode = -1;
 
-int lastIRState = 1;            
+// IR state (floor)
+int lastFloorIRState = 1;
+
+// obstacle state (front)
+int lastFrontIRState = 1;
 
 // ===== Map yaw → text direction =====
 String getDirection(float yaw) {
@@ -80,7 +88,7 @@ int directionToCode(String d) {
   return 0;
 }
 
-// ===== WiFi connection checker =====
+// ===== WiFi connection checker (debug) =====
 void checkWiFiStatus() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("WiFi Status: CONNECTED");
@@ -130,7 +138,7 @@ void sendObstacle(int ox, int oy) {
   Serial.println("Sent: " + msg);
 }
 
-// ===== Read IMU + Update direction =====
+// ===== Read IMU + Update currentDirCode =====
 void updateIMUDirection() {
   if (!mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) return;
 
@@ -142,7 +150,7 @@ void updateIMUDirection() {
   if (yaw < 0) yaw += 360;
 
   String newDir = getDirection(yaw);
-  currentDir = newDir;
+  currentDir     = newDir;
   currentDirCode = directionToCode(newDir);
 
   Serial.print("Yaw: "); Serial.print(yaw);
@@ -150,92 +158,101 @@ void updateIMUDirection() {
   Serial.print("  Code: "); Serial.println(currentDirCode);
 }
 
-// ===== Ultrasonic distance (cm) =====
-float getDistanceCm() {
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
+// ===== Check FRONT IR for obstacle and send OBS =====
+// Active low: 0 = obstacle detected
+void checkObstacleFrontIR() {
+  int frontNow = digitalRead(IR_FRONT_PIN);
 
-  long duration = pulseIn(ECHO_PIN, HIGH, 30000);
-  if (duration == 0) return 9999;
+  // optional: only act on change (reduces spam)
+  if (frontNow != lastFrontIRState) {
+    Serial.print("Front IR changed: ");
+    Serial.print(lastFrontIRState);
+    Serial.print(" -> ");
+    Serial.println(frontNow);
+  }
 
-  return duration * 0.0343f / 2.0f;
-}
-
-// ===== Check for obstacle =====
-void checkObstacle() {
-  float d = getDistanceCm();
-  Serial.print("Distance: "); Serial.println(d);
-
-  if (d < 15.0f) {
+  // obstacle detected
+  if (frontNow == LOW) {
     int ox = xCell;
     int oy = yCell;
 
-    if (currentDirCode == 0) oy -= 1;
-    else if (currentDirCode == 1) ox += 1;
-    else if (currentDirCode == 2) oy += 1;
-    else if (currentDirCode == 3) ox -= 1;
+    if (currentDirCode == 0) oy -= 1;       // UP
+    else if (currentDirCode == 1) ox += 1;  // RIGHT
+    else if (currentDirCode == 2) oy += 1;  // DOWN
+    else if (currentDirCode == 3) ox -= 1;  // LEFT
 
-    if (ox >= 1 && ox <= 4 && oy >= 1 && oy <= 4)
+    if (ox >= 1 && ox <= 4 && oy >= 1 && oy <= 4) {
       sendObstacle(ox, oy);
+    } else {
+      Serial.println("Obstacle cell outside grid – ignored");
+    }
   }
+
+  lastFrontIRState = frontNow;
 }
 
-// ===== IR movement detection =====
-void updatePositionFromIR() {
-  int irNow = digitalRead(IR_PIN);
+// ===== Update grid position when FLOOR IR changes =====
+// Active low means output toggles depending on black/white
+void updatePositionFromFloorIR() {
+  int floorNow = digitalRead(IR_FLOOR_PIN);
 
-  if (irNow != lastIRState) {
-    Serial.print("IR changed: ");
-    Serial.print(lastIRState);
+  if (floorNow != lastFloorIRState) {
+    Serial.print("Floor IR changed: ");
+    Serial.print(lastFloorIRState);
     Serial.print(" -> ");
-    Serial.println(irNow);
+    Serial.println(floorNow);
 
     int newX = xCell;
     int newY = yCell;
 
-    if (currentDirCode == 0) newY -= 1;
-    else if (currentDirCode == 1) newX += 1;
-    else if (currentDirCode == 2) newY += 1;
-    else if (currentDirCode == 3) newX -= 1;
+    if (currentDirCode == 0) newY -= 1;        // UP
+    else if (currentDirCode == 1) newX += 1;   // RIGHT
+    else if (currentDirCode == 2) newY += 1;   // DOWN
+    else if (currentDirCode == 3) newX -= 1;   // LEFT
 
     if (newX >= 1 && newX <= 4 && newY >= 1 && newY <= 4) {
       xCell = newX;
       yCell = newY;
 
+      int gridColor = grid[yCell - 1][xCell - 1]; // 0:white,1:black
       Serial.print("New cell: (");
       Serial.print(xCell);
       Serial.print(",");
       Serial.print(yCell);
-      Serial.println(")");
+      Serial.print(")  Color: ");
+      Serial.println(gridColor == 0 ? "WHITE" : "BLACK");
 
       sendPosition();
+    } else {
+      Serial.println("Move ignored: would leave the 4x4 grid");
     }
   }
 
-  lastIRState = irNow;
+  lastFloorIRState = floorNow;
 }
 
 void setup() {
   Serial.begin(115200);
 
-    // Start WiFi
+  // Start WiFi
   WiFi.begin(ssid, password);
   Serial.println("Connecting to WiFi...");
   delay(2000);
 
-  Wire.begin(12, 13);
+  Wire.begin(26, 27);
 
-  pinMode(IR_PIN,   INPUT);
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
+  pinMode(IR_FLOOR_PIN, INPUT);
+  pinMode(IR_FRONT_PIN, INPUT);
 
-  // Read initial IR state at starting cell (4,1)
-  lastIRState = digitalRead(IR_PIN);
-  Serial.print("Initial IR state: ");
-  Serial.println(lastIRState);
+  // Read initial IR states
+  lastFloorIRState = digitalRead(IR_FLOOR_PIN);
+  lastFrontIRState = digitalRead(IR_FRONT_PIN);
+
+  Serial.print("Initial Floor IR state: ");
+  Serial.println(lastFloorIRState);
+
+  Serial.print("Initial Front IR state: ");
+  Serial.println(lastFrontIRState);
 
   // ==== INIT IMU ====
   mpu.initialize();
@@ -249,7 +266,7 @@ void setup() {
     Serial.println("IMU READY");
   } else {
     Serial.println("IMU INIT FAILED!");
-    while (1);  // stop here
+    while (1);
   }
 
   // Send initial position
@@ -260,18 +277,17 @@ void setup() {
 void loop() {
   if (!dmpReady) return;
 
- checkWiFiStatus();
- updateIMUDirection();
+  checkWiFiStatus();
+  updateIMUDirection();
 
-// ✅ if direction changed, send POS even if robot didn't move
-if (currentDirCode != lastSentDirCode) {
-  sendPosition();
-  lastSentDirCode = currentDirCode;
-}
+  // send POS if direction changed even without movement
+  if (currentDirCode != lastSentDirCode) {
+    sendPosition();
+    lastSentDirCode = currentDirCode;
+  }
 
-updatePositionFromIR();
-checkObstacle();
+  updatePositionFromFloorIR();   // movement
+  checkObstacleFrontIR();        // obstacle 
 
-delay(200);
-
+  delay(200);
 }
