@@ -1,350 +1,307 @@
-# 🤖 Wireless Sensor Network for Robotic Fleet Coordination
+# Wireless Sensor Network for Robotic Fleet Coordination
 
-<div align="center">
+[![ESP32](https://img.shields.io/badge/ESP32-Microcontroller-blue.svg)](https://www.espressif.com/en/products/socs/esp32)
+[![WiFi](https://img.shields.io/badge/WiFi-TCP-green.svg)](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)
+[![MPU6050](https://img.shields.io/badge/Sensor-MPU6050-orange.svg)](https://invensense.tdk.com/products/motion-tracking/6-axis/mpu-6050/)
+[![IR Sensor](https://img.shields.io/badge/Sensor-IR-red.svg)](https://en.wikipedia.org/wiki/Infrared_sensor)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![ESP32](https://img.shields.io/badge/ESP32-Dual_Core-blue?style=for-the-badge&logo=espressif&logoColor=white)
-![Arduino](https://img.shields.io/badge/Arduino-IDE_2.x-00979D?style=for-the-badge&logo=arduino&logoColor=white)
-![ESP-NOW](https://img.shields.io/badge/Protocol-ESP--NOW-green?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Complete-success?style=for-the-badge)
-
-**A distributed wireless sensor network enabling real-time coordination and mapping between autonomous robotic agents using ESP-NOW mesh communication.**
-
-[Features](#-features) • [Architecture](#-architecture) • [Hardware](#-hardware-requirements) • [Setup](#-quick-start) • [Documentation](#-documentation)
-
-</div>
-
----
-
-## 📋 Table of Contents
-
-- [Overview](#-overview)
-- [Features](#-features)
-- [Architecture](#-architecture)
-- [Hardware Requirements](#-hardware-requirements)
-- [Software Requirements](#-software-requirements)
-- [Repository Structure](#-repository-structure)
-- [Quick Start](#-quick-start)
-- [Communication Protocol](#-communication-protocol)
-- [Web Interface](#-web-interface)
-- [Pin Configuration](#-pin-configuration)
-- [Project Timeline](#-project-timeline)
-- [Team](#-team)
-- [License](#-license)
-
----
+A distributed robotic fleet coordination system using ESP32 microcontrollers, WiFi TCP communication, and IR sensors for position tracking and obstacle detection. This project demonstrates real-time data collection, processing, and visualization of multiple robots navigating in a coordinated environment.
 
 ## 🎯 Overview
 
-This project implements a **wireless sensor network** for coordinating a fleet of mobile robots exploring a 4×4 grid environment. Each robot is equipped with sensors (ultrasonic, IR, IMU) and communicates discoveries to peer robots and a central base station using the **ESP-NOW protocol**.
+This project implements a wireless sensor network for coordinating multiple autonomous robots. Each robot is equipped with:
+- **IR sensors** for obstacle detection and position tracking
+- **MPU6050 IMU** for orientation sensing
+- **WiFi TCP connectivity** for real-time communication with a base station
 
-### Key Capabilities
+The system enables robots to:
+- Navigate autonomously while avoiding obstacles
+- Track their position on a black-and-white grid
+- Share sensor data with a central base station
+- Coordinate movements to prevent collisions
 
-- 🗺️ **Collaborative Mapping** — Robots share obstacle discoveries in real-time
-- 📡 **Mesh Communication** — Peer-to-peer ESP-NOW with automatic re-broadcasting
-- 🌐 **Web Visualization** — Live grid map viewable from any browser
-- ⚡ **Low Latency** — Sub-10ms message delivery between nodes
-
----
-
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| **Multi-Robot Coordination** | Two mobile robots explore and share map data simultaneously |
-| **Obstacle Detection** | HC-SR04 ultrasonic sensors detect obstacles within 15cm |
-| **Position Tracking** | IR sensors detect white/black square transitions on checkerboard grid |
-| **Orientation Sensing** | MPU6050 IMU with DMP provides heading (Forward/Right/Backward/Left) |
-| **Mesh Re-broadcasting** | Messages forwarded with hop count to prevent broadcast storms |
-| **Real-time Web UI** | Base station serves live map visualization via WiFi AP |
-| **SPIFFS Web Files** | HTML/CSS/JS served from ESP32 flash storage |
-
----
-
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        SYSTEM ARCHITECTURE                          │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│    ┌──────────────┐    ESP-NOW    ┌──────────────┐                 │
-│    │   ROBOT 1    │◄─────────────►│   ROBOT 2    │                 │
-│    │  Start(4,1)  │               │  Start(4,4)  │                 │
-│    │              │               │              │                 │
-│    │ • Ultrasonic │               │ • Ultrasonic │                 │
-│    │ • IR Sensor  │               │ • IR Sensor  │                 │
-│    │ • MPU6050    │               │ • MPU6050    │                 │
-│    └──────┬───────┘               └──────┬───────┘                 │
-│           │                              │                          │
-│           │         ESP-NOW              │                          │
-│           └───────────┬──────────────────┘                          │
-│                       ▼                                             │
-│              ┌────────────────┐                                     │
-│              │  BASE STATION  │                                     │
-│              │                │                                     │
-│              │ • ESP-NOW Recv │         ┌──────────────┐           │
-│              │ • WiFi AP      │────────►│   PC/Phone   │           │
-│              │ • Web Server   │  HTTP   │  Web Browser │           │
-│              │ • SPIFFS       │         └──────────────┘           │
-│              └────────────────┘                                     │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     Base Station (PC)                        │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │        Python Processing Application                │     │
+│  │  - TCP Server (192.168.4.1:3333)                   │     │
+│  │  - Data aggregation & processing                    │     │
+│  │  - Real-time visualization                          │     │
+│  │  - Collision detection                              │     │
+│  └────────────────────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            │ WiFi TCP
+                            │ (RobotNet)
+          ┌─────────────────┼─────────────────┐
+          │                 │                 │
+    ┌─────▼─────┐     ┌─────▼─────┐     ┌────▼──────┐
+    │  Robot 1  │     │  Robot 2  │     │  Robot N  │
+    │           │     │           │     │           │
+    │  ESP32    │     │  ESP32    │     │  ESP32    │
+    │  + IR     │     │  + IR     │     │  + IR     │
+    │  + MPU6050│     │  + MPU6050│     │  + MPU6050│
+    └───────────┘     └───────────┘     └───────────┘
 ```
 
 ### Communication Flow
 
-1. **Robot 1** detects obstacle → Sends `MapMessage` to **Robot 2**
-2. **Robot 2** updates internal map → Re-broadcasts to **Robot 1** + **Base Station**
-3. **Base Station** updates grid → Serves to web clients
-4. Process is bidirectional: Robot 2 discoveries flow similarly
-
----
+1. **Robot Sensors** → Collect data (position, obstacles, orientation)
+2. **WiFi TCP** → Transmit CSV formatted messages to base station
+3. **Base Station** → Process and aggregate data from all robots
+4. **Visualization** → Real-time display of fleet status and positions
 
 ## 🔧 Hardware Requirements
 
-### Components List
+### Per Robot:
+- **ESP32 Development Board** (e.g., ESP32-WROOM-32)
+- **MPU6050 IMU Module** - 6-axis accelerometer/gyroscope for orientation
+- **IR Sensor (Obstacle Detection)** - Active low, detects obstacles ahead
+- **IR Sensor (Position Tracking)** - Active low, detects black/white surfaces
+- **Motor Driver** (e.g., L298N or similar)
+- **DC Motors** with wheels
+- **Power Supply** (battery pack, 7.4V recommended)
+- **Chassis** and mounting hardware
 
-| Qty | Component | Purpose |
-|:---:|-----------|---------|
-| 3 | ESP32 DevKit | Main microcontrollers |
-| 2 | RC Toy Vehicles | Mobile robot platforms |
-| 2 | HC-SR04 Ultrasonic | Obstacle detection (15cm range) |
-| 2 | IR Sensor Module | Black/white square detection |
-| 2 | MPU6050 IMU | Orientation tracking (yaw) |
-| 1 | 4×4 Checkerboard Grid | Navigation area |
-
-### Wiring Diagram (Per Robot)
-
-```
-ESP32 GPIO Layout:
-┌────────────────────────┐
-│        ESP32           │
-│                        │
-│  GPIO 26 ──► TRIG      │ ─┐
-│  GPIO 27 ◄── ECHO      │  │ Ultrasonic
-│                        │ ─┘
-│  GPIO 14 ◄── IR_OUT    │ ── IR Sensor
-│                        │
-│  GPIO 12 ─── SDA       │ ─┐
-│  GPIO 13 ─── SCL       │  │ MPU6050 I2C
-│                        │ ─┘
-└────────────────────────┘
-```
-
----
-
-## 💻 Software Requirements
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| Arduino IDE | 2.x+ | Development environment |
-| ESP32 Board Support | Latest | ESP32 toolchain |
-| MPU6050_6Axis_MotionApps20 | - | DMP-based orientation |
-| WebServer (ESP32) | Built-in | HTTP server |
-| SPIFFS | Built-in | Flash file system |
-| ESP-NOW | Built-in | Peer-to-peer protocol |
-
----
-
-## 📁 Repository Structure
-
-```
-Wireless-Sensor-Network-for-Robotic-Fleet-Coordination/
-│
-├── 📄 README.md                 # This file
-├── 📄 LICENSE                   # MIT License
-│
-├── 📁 RobotNode/
-│   └── RobotNode.ino            # Robot 1 firmware (starts at 4,1)
-│
-├── 📁 RobotNode2/
-│   └── RobotNode2.ino           # Robot 2 firmware (starts at 4,4)
-│
-├── 📁 BaseStation2/
-│   ├── BaseStation2.ino         # Base station firmware
-│   └── data/
-│       └── index.html           # Web UI for grid visualization
-│
-└── 📁 Docs/
-    └── report.tex               # LaTeX project report
-```
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/your-username/Wireless-Sensor-Network-for-Robotic-Fleet-Coordination.git
-cd Wireless-Sensor-Network-for-Robotic-Fleet-Coordination
-```
-
-### 2. Configure MAC Addresses
-
-Each ESP32 has a unique MAC address. Update the following in all `.ino` files:
-
-```cpp
-// Find your MAC with: WiFi.macAddress()
-uint8_t ROBOT1_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x88, 0x58};
-uint8_t ROBOT2_MAC[] = {0xCC, 0xDB, 0xA7, 0x97, 0x76, 0x9C};
-uint8_t BASE_MAC[]   = {0xCC, 0xDB, 0xA7, 0x97, 0x7B, 0x6C};
-```
-
-### 3. Upload SPIFFS Data
-
-For the base station web interface:
-
-1. Install **ESP32 Sketch Data Upload** tool
-2. Place `index.html` in `BaseStation2/data/`
-3. Run **Tools → ESP32 Sketch Data Upload**
-
-### 4. Flash Firmware
-
-| Board | Sketch to Upload |
-|-------|------------------|
-| Robot 1 ESP32 | `RobotNode/RobotNode.ino` |
-| Robot 2 ESP32 | `RobotNode2/RobotNode2.ino` |
-| Base Station | `BaseStation2/BaseStation2.ino` |
-
-### 5. Connect to Web Interface
-
-1. Power on the base station
-2. Connect your PC/phone to WiFi: **`RobotBase`** (password: `12345678`)
-3. Open browser: **`http://192.168.4.1`**
-4. Watch the grid update in real-time!
-
----
+### Base Station:
+- **PC or Laptop** with WiFi capability
+- **Python 3.7+** installed
+- Network configured to communicate with robot network
 
 ## 📡 Communication Protocol
 
-### Message Structure
+### Network Configuration
+- **SSID**: RobotNet
+- **Base Station IP**: 192.168.4.1
+- **TCP Port**: 3333
+- **Protocol**: WiFi TCP with CSV message format
 
-```cpp
-typedef struct __attribute__((packed)) {
-  uint8_t type;      // MSG_TYPE_MAP_UPDATE = 1
-  uint8_t sourceId;  // Robot ID (1 or 2)
-  uint8_t row;       // Grid row (1-4)
-  uint8_t col;       // Grid column (1-4)
-  uint8_t value;     // CELL_UNKNOWN/CLEAR/OBSTACLE
-  uint8_t hop;       // 0=original, 1=forwarded
-} MapMessage;        // Total: 6 bytes
+### Message Format
+
+The robots communicate using CSV-formatted strings over TCP:
+
+#### Position Update Message
 ```
-
-### Cell Types
-
-| Value | Constant | Meaning |
-|:-----:|----------|---------|
-| 0 | `CELL_UNKNOWN` | Unexplored cell |
-| 1 | `CELL_CLEAR` | Robot has visited |
-| 2 | `CELL_OBSTACLE` | Obstacle detected |
-
-### Re-broadcast Logic
-
-```cpp
-// Only forward original messages from other robots
-if (msg.hop == 0 && msg.sourceId != ROBOT_ID) {
-  msg.hop = 1;  // Prevent infinite forwarding
-  esp_now_send(OTHER_ROBOT_MAC, &msg, sizeof(msg));
-  esp_now_send(BASE_MAC, &msg, sizeof(msg));
-}
+POS,x,y,robotID,dirCode
 ```
+- `x`: X-coordinate on grid
+- `y`: Y-coordinate on grid
+- `robotID`: Unique robot identifier (1-255)
+- `dirCode`: Direction code (0=North, 1=East, 2=South, 3=West)
 
----
+**Example**: `POS,5,3,1,0` - Robot 1 at position (5,3) facing North
 
-## 🌐 Web Interface
-
-The base station hosts a real-time visualization at `http://192.168.4.1`:
-
-- **4×4 Grid Display** — Shows all cells with color coding
-- **Auto-refresh** — Updates every 2 seconds via `/map` API
-- **Cell States**:
-  - ❓ Gray = Unknown
-  - ✅ Green = Clear
-  - ❌ Red = Obstacle
-
-### API Endpoint
-
+#### Obstacle Detection Message
 ```
-GET /map
-Response: {"grid":[[0,1,2,0],[1,1,0,2],[0,0,1,1],[1,1,1,1]]}
+OBS,x,y,robotID
 ```
+- `x`: X-coordinate where obstacle detected
+- `y`: Y-coordinate where obstacle detected
+- `robotID`: Robot identifier that detected the obstacle
 
----
+**Example**: `OBS,6,3,1` - Robot 1 detected obstacle at (6,3)
+
+### TCP Communication Details
+
+- **Connection**: Persistent TCP connection to base station
+- **Reconnection**: Automatic reconnection on connection loss
+- **Message Frequency**: Position updates every 500ms, obstacle reports as detected
+- **Encoding**: ASCII/UTF-8 text with newline terminators
 
 ## 🔌 Pin Configuration
 
-| Component | GPIO | Direction | Notes |
-|-----------|:----:|:---------:|-------|
-| IR Sensor | 14 | INPUT | HIGH=White, LOW=Black |
-| Ultrasonic Trigger | 26 | OUTPUT | 10μs pulse |
-| Ultrasonic Echo | 27 | INPUT | Duration measurement |
-| MPU6050 SDA | 12 | I2C | Data line |
-| MPU6050 SCL | 13 | I2C | Clock line |
+### ESP32 GPIO Assignments
 
----
+```cpp
+// IR Sensors
+#define IR_FLOOR_PIN 14      // Position tracking (black/white detection) - Active LOW
+#define IR_OBSTACLE_PIN 25   // Obstacle detection (front sensor) - Active LOW
 
-## 📅 Project Timeline
+// MPU6050 IMU (I2C)
+#define MPU6050_SDA 26       // I2C Data line
+#define MPU6050_SCL 27       // I2C Clock line
 
-| Week | Phase | Deliverables |
-|:----:|-------|--------------|
-| **1** | Research & Setup | ESP-NOW learning, hardware assembly, architecture design |
-| **2** | Core Modules | Sensor drivers, message structure, ESP-NOW init |
-| **3** | Integration | Dual-robot communication, re-broadcast logic, map sync |
-| **4** | Base Station | Web server, SPIFFS, real-time visualization |
-| **5** | Testing & Docs | System demo, performance metrics, final report |
+// Motor Control (example - adjust based on your motor driver)
+#define MOTOR_L_FWD 12       // Left motor forward
+#define MOTOR_L_BWD 13       // Left motor backward
+#define MOTOR_R_FWD 32       // Right motor forward
+#define MOTOR_R_BWD 33       // Right motor backward
+```
 
----
+### Sensor Details
 
-## 📊 Performance Metrics
+#### IR Floor Sensor (GPIO 14)
+- **Purpose**: Position tracking on black/white grid
+- **Logic**: Active LOW (LOW = black detected, HIGH = white detected)
+- **Mounting**: Facing downward, ~1cm from floor
 
-| Metric | Value |
-|--------|-------|
-| ESP-NOW Range | >50m (line of sight) |
-| Message Latency | <10ms |
-| Obstacle Detection | 15cm range |
-| IMU Update Rate | 100Hz (DMP) |
-| Web Refresh Rate | 2 seconds |
-| Grid Size | 4×4 (16 cells) |
+#### IR Obstacle Sensor (GPIO 25)
+- **Purpose**: Front obstacle detection
+- **Logic**: Active LOW (LOW = obstacle detected, HIGH = clear)
+- **Mounting**: Facing forward, ~5-10cm from ground
+- **Range**: Typically 2-30cm (model dependent)
 
----
+#### MPU6050 IMU (I2C)
+- **Purpose**: Orientation and motion sensing
+- **Interface**: I2C (address 0x68 or 0x69)
+- **Sensors**: 3-axis accelerometer + 3-axis gyroscope
+- **Usage**: Calculate heading/direction, detect turns
 
-## 👥 Team
+## 💻 Software Setup
 
-| Name | Student ID |
-|------|:----------:|
-| Hassan Yousef | 13006567 |
-| Pierre George Boshra | 13007351 |
-| Mohamed Walid | 13006513 |
-| Abdelhamid ElSharnouby | 13006294 |
-| Khaled Khaled | 14001048 |
-| Mahmoud Nasser | 13006342 |
+### Robot Firmware (ESP32)
 
-**Supervised by:** Dr. Yasmine Zaghloul  
-**Teaching Assistant:** Eng. Omar Hemeda
+1. **Install Arduino IDE** with ESP32 board support:
+   ```bash
+   # Add ESP32 Board Manager URL in Arduino IDE preferences:
+   https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+   ```
 
----
+2. **Install Required Libraries**:
+   - WiFi (built-in with ESP32)
+   - Wire (built-in)
+   - MPU6050 (by Electronic Cats or Jeff Rowberg)
 
-## 📚 References
+3. **Configure Network Settings**:
+   ```cpp
+   const char* ssid = "RobotNet";
+   const char* password = "your_password";
+   const char* server_ip = "192.168.4.1";
+   const int server_port = 3333;
+   ```
 
-1. [ESP-NOW Documentation](https://www.espressif.com/) — Espressif Systems
-2. [ESP-NOW Tutorial](https://www.youtube.com/watch?v=Ydi0M3Xd_vs) — YouTube
-3. [MPU6050 Library](https://github.com/jrowberg/i2cdevlib) — I2Cdevlib
-4. [Arduino ESP32](https://docs.arduino.cc/) — Arduino Documentation
+4. **Upload Firmware** to each ESP32 with unique robot ID
 
----
+### Base Station Software
+
+1. **Clone Repository**:
+   ```bash
+   git clone https://github.com/CakeRemix/Wireless-Sensor-Network-for-Robotic-Fleet-Coordination.git
+   cd Wireless-Sensor-Network-for-Robotic-Fleet-Coordination
+   ```
+
+2. **Install Python Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure Network**:
+   - Set PC WiFi to connect to RobotNet or create RobotNet access point
+   - Ensure PC has IP 192.168.4.1 on the network
+
+4. **Run Base Station**:
+   ```bash
+   python base_station.py
+   ```
+
+## 🚀 Usage
+
+### Starting the System
+
+1. **Power on all robots** - They will automatically connect to RobotNet and establish TCP connections
+
+2. **Start base station software** on PC:
+   ```bash
+   python base_station.py
+   ```
+
+3. **Monitor the visualization** - Real-time display shows:
+   - Robot positions and orientations
+   - Detected obstacles
+   - Movement paths
+   - Connection status
+
+### Robot Operation
+
+- Robots autonomously navigate the environment
+- IR floor sensor tracks position on grid
+- IR obstacle sensor triggers avoidance maneuvers
+- MPU6050 maintains orientation awareness
+- Position and obstacle data sent to base station via WiFi TCP
+
+## 📊 Data Visualization
+
+The base station provides:
+- **Real-time grid map** showing robot positions
+- **Obstacle overlay** with detected obstacles
+- **Status panel** with connection info and sensor readings
+- **Path history** showing robot trajectories
+- **Alert system** for potential collisions
+
+## 🔬 Technical Details
+
+### Position Tracking
+- Black/white grid pattern on floor
+- IR sensor detects transitions
+- Dead reckoning between grid lines
+- MPU6050 gyroscope for heading correction
+
+### Obstacle Detection
+- IR sensor continuously monitors front area
+- Active LOW signal indicates obstacle presence
+- Triggers avoidance algorithm
+- Position reported to base station for fleet coordination
+
+### Coordination Algorithm
+- Base station maintains global map
+- Collision prediction based on positions and velocities
+- Path planning considers known obstacles
+- Priority-based movement resolution
+
+## 🛠️ Troubleshooting
+
+### Connectivity Issues
+- **Robots won't connect**: Check WiFi credentials and base station IP
+- **Connection drops**: Verify WiFi signal strength, reduce distance
+- **No TCP connection**: Ensure base station server is running on port 3333
+
+### Sensor Issues
+- **IR sensors not responding**: Check wiring, verify active LOW logic
+- **Position tracking errors**: Adjust sensor height, ensure good contrast on grid
+- **MPU6050 not found**: Check I2C connections, verify address (0x68/0x69)
+
+### Performance Issues
+- **Laggy updates**: Reduce message frequency, check network bandwidth
+- **Poor obstacle detection**: Adjust IR sensor sensitivity or positioning
+
+## 📈 Future Enhancements
+
+- [ ] Multi-hop mesh networking for extended range
+- [ ] Machine learning for improved path planning
+- [ ] Support for dynamic obstacle avoidance
+- [ ] Mobile app for remote monitoring
+- [ ] Additional sensor integration (ultrasonic, LiDAR)
+- [ ] Swarm intelligence algorithms
+- [ ] Battery monitoring and charging station navigation
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- ESP32 community for excellent documentation and libraries
+- MPU6050 library contributors
+- Open-source robotics community
+
+## 📧 Contact
+
+Project Link: [https://github.com/CakeRemix/Wireless-Sensor-Network-for-Robotic-Fleet-Coordination](https://github.com/CakeRemix/Wireless-Sensor-Network-for-Robotic-Fleet-Coordination)
 
 ---
 
-<div align="center">
-
-**German International University**  
-Faculty of Engineering • Automation and Control  
-Winter Semester 2025
-
-</div>
+**Note**: This project is for educational purposes and demonstrates concepts in distributed systems, sensor networks, and robotic coordination.
